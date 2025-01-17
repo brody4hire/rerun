@@ -281,7 +281,14 @@ impl TransformCacheStoreSubscriber {
     }
 
     fn add_chunk(&mut self, event: &re_chunk_store::ChunkStoreEvent, aspects: TransformAspect) {
+        re_tracing::profile_function!();
+
         let entity_path = event.chunk.entity_path();
+
+        if event.diff.chunk.is_static() {
+            // TODO: Insert static transform at the beginning of each known and FUTURE timeline.
+            // TODO: test this, both with existing and new timelines.
+        }
 
         for (timeline, time_column) in event.diff.chunk.timelines() {
             let per_timeline = self.per_timeline.entry(*timeline).or_default();
@@ -294,47 +301,58 @@ impl TransformCacheStoreSubscriber {
             // This invalidates any time _after_ the first event in this chunk.
             // (e.g. if a rotation is added prior to translations later on,
             // then the resulting transforms at those translations changes as well for latest-at queries)
-            let mut invalidated_times = Vec::new();
-            let Some(min_time) = time_column.times().min() else {
-                continue;
+
+            let times = if event.diff.chunk.is_static() {
+                dbg!(aspects, entity_path);
+                vec![TimeInt::STATIC]
+            } else {
+                let mut invalidated_times = Vec::new();
+                let Some(min_time) = time_column.times().min() else {
+                    continue;
+                };
+                if let Some(entity_entry) = per_timeline.per_entity.get_mut(&entity_path.hash()) {
+                    if aspects.contains(TransformAspect::Tree) {
+                        let invalidated_tree_transforms =
+                            entity_entry.tree_transforms.split_off(&min_time);
+                        invalidated_times.extend(invalidated_tree_transforms.into_keys());
+                    }
+                    if aspects.contains(TransformAspect::Pose) {
+                        if let Some(pose_transforms) = &mut entity_entry.pose_transforms {
+                            let invalidated_pose_transforms = pose_transforms.split_off(&min_time);
+                            invalidated_times.extend(invalidated_pose_transforms.into_keys());
+                        }
+                    }
+                    if aspects.contains(TransformAspect::PinholeOrViewCoordinates) {
+                        if let Some(pinhole_projections) = &mut entity_entry.pinhole_projections {
+                            let invalidated_pinhole_projections =
+                                pinhole_projections.split_off(&min_time);
+                            invalidated_times.extend(invalidated_pinhole_projections.into_keys());
+                        }
+                    }
+                }
+
+                time_column
+                    .times()
+                    .chain(invalidated_times.into_iter())
+                    .collect()
             };
-            if let Some(entity_entry) = per_timeline.per_entity.get_mut(&entity_path.hash()) {
-                if aspects.contains(TransformAspect::Tree) {
-                    let invalidated_tree_transforms =
-                        entity_entry.tree_transforms.split_off(&min_time);
-                    invalidated_times.extend(invalidated_tree_transforms.into_keys());
-                }
-                if aspects.contains(TransformAspect::Pose) {
-                    if let Some(pose_transforms) = &mut entity_entry.pose_transforms {
-                        let invalidated_pose_transforms = pose_transforms.split_off(&min_time);
-                        invalidated_times.extend(invalidated_pose_transforms.into_keys());
-                    }
-                }
-                if aspects.contains(TransformAspect::PinholeOrViewCoordinates) {
-                    if let Some(pinhole_projections) = &mut entity_entry.pinhole_projections {
-                        let invalidated_pinhole_projections =
-                            pinhole_projections.split_off(&min_time);
-                        invalidated_times.extend(invalidated_pinhole_projections.into_keys());
-                    }
-                }
-            }
 
             per_timeline
                 .invalidated_transforms
                 .push(InvalidatedTransforms {
                     entity_path: entity_path.clone(),
-                    times: time_column
-                        .times()
-                        .chain(invalidated_times.into_iter())
-                        .collect(),
+                    times,
                     aspects,
                 });
         }
     }
 
     fn remove_chunk(&mut self, event: &re_chunk_store::ChunkStoreEvent, aspects: TransformAspect) {
+        re_tracing::profile_function!();
+
         let entity_path = event.chunk.entity_path();
 
+        // Note that we ignore static timelines for removal.
         for (timeline, time_column) in event.diff.chunk.timelines() {
             let Some(per_timeline) = self.per_timeline.get_mut(timeline) else {
                 continue;
