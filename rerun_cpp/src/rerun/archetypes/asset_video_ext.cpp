@@ -35,9 +35,11 @@ namespace rerun::archetypes {
         static AssetVideo from_bytes(
             rerun::Collection<uint8_t> bytes, std::optional<rerun::components::MediaType> media_type = {}
         ) {
-            // TODO(jan): we could try and guess using magic bytes here, like rust does.
             AssetVideo asset = AssetVideo(std::move(bytes));
-            asset.media_type = media_type;
+            // TODO(jan): we could try and guess using magic bytes here, like rust does.
+            if (media_type.has_value()) {
+                return std::move(asset).with_media_type(media_type.value());
+            }
             return asset;
         }
 
