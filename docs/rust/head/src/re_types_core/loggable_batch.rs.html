@@ -522,6 +522,41 @@
 <a href="#522" id="522">522</a>
 <a href="#523" id="523">523</a>
 <a href="#524" id="524">524</a>
+<a href="#525" id="525">525</a>
+<a href="#526" id="526">526</a>
+<a href="#527" id="527">527</a>
+<a href="#528" id="528">528</a>
+<a href="#529" id="529">529</a>
+<a href="#530" id="530">530</a>
+<a href="#531" id="531">531</a>
+<a href="#532" id="532">532</a>
+<a href="#533" id="533">533</a>
+<a href="#534" id="534">534</a>
+<a href="#535" id="535">535</a>
+<a href="#536" id="536">536</a>
+<a href="#537" id="537">537</a>
+<a href="#538" id="538">538</a>
+<a href="#539" id="539">539</a>
+<a href="#540" id="540">540</a>
+<a href="#541" id="541">541</a>
+<a href="#542" id="542">542</a>
+<a href="#543" id="543">543</a>
+<a href="#544" id="544">544</a>
+<a href="#545" id="545">545</a>
+<a href="#546" id="546">546</a>
+<a href="#547" id="547">547</a>
+<a href="#548" id="548">548</a>
+<a href="#549" id="549">549</a>
+<a href="#550" id="550">550</a>
+<a href="#551" id="551">551</a>
+<a href="#552" id="552">552</a>
+<a href="#553" id="553">553</a>
+<a href="#554" id="554">554</a>
+<a href="#555" id="555">555</a>
+<a href="#556" id="556">556</a>
+<a href="#557" id="557">557</a>
+<a href="#558" id="558">558</a>
+<a href="#559" id="559">559</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
 
 <span class="kw">use crate</span>::{
@@ -529,7 +564,7 @@
     SerializationResult,
 };
 
-<span class="kw">use </span>arrow::array::ListArray <span class="kw">as </span>ArrowListArray;
+<span class="kw">use </span>arrow2::array::ListArray <span class="kw">as </span>Arrow2ListArray;
 
 <span class="attr">#[allow(unused_imports)] </span><span class="comment">// used in docstrings
 </span><span class="kw">use </span><span class="kw">crate</span>::Archetype;
@@ -551,7 +586,12 @@
     // type Loggable: Loggable;
 
     </span><span class="doccomment">/// Serializes the batch into an Arrow array.
-    </span><span class="kw">fn </span>to_arrow(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;arrow::array::ArrayRef&gt;;
+    </span><span class="kw">fn </span>to_arrow(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;arrow::array::ArrayRef&gt; {
+        <span class="self">self</span>.to_arrow2().map(|array| array.into())
+    }
+
+    <span class="doccomment">/// Serializes the batch into an Arrow2 array.
+    </span><span class="kw">fn </span>to_arrow2(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;Box&lt;<span class="kw">dyn </span>::arrow2::array::Array&gt;&gt;;
 }
 
 <span class="attr">#[allow(dead_code)]
@@ -562,13 +602,13 @@
 <span class="doccomment">/// A [`ComponentBatch`] represents an array's worth of [`Component`] instances.
 </span><span class="kw">pub trait </span>ComponentBatch: LoggableBatch {
     <span class="doccomment">/// Serializes the batch into an Arrow list array with a single component per list.
-    </span><span class="kw">fn </span>to_arrow_list_array(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;ArrowListArray&gt; {
-        <span class="kw">let </span>array = <span class="self">self</span>.to_arrow()<span class="question-mark">?</span>;
+    </span><span class="kw">fn </span>to_arrow_list_array(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;Arrow2ListArray&lt;i32&gt;&gt; {
+        <span class="kw">let </span>array = <span class="self">self</span>.to_arrow2()<span class="question-mark">?</span>;
         <span class="kw">let </span>offsets =
-            arrow::buffer::OffsetBuffer::from_lengths(std::iter::repeat(<span class="number">1</span>).take(array.len()));
-        <span class="kw">let </span>nullable = <span class="bool-val">true</span>;
-        <span class="kw">let </span>field = arrow::datatypes::Field::new(<span class="string">"item"</span>, array.data_type().clone(), nullable);
-        ArrowListArray::try_new(field.into(), offsets, array, <span class="prelude-val">None</span>).map_err(|err| err.into())
+            arrow2::offset::Offsets::try_from_lengths(std::iter::repeat(<span class="number">1</span>).take(array.len()))<span class="question-mark">?</span>;
+        <span class="kw">let </span>data_type = Arrow2ListArray::&lt;i32&gt;::default_datatype(array.data_type().clone());
+        Arrow2ListArray::&lt;i32&gt;::try_new(data_type, offsets.into(), array.to_boxed(), <span class="prelude-val">None</span>)
+            .map_err(|err| err.into())
     }
 
     <span class="doccomment">/// Returns the complete [`ComponentDescriptor`] for this [`ComponentBatch`].
@@ -797,6 +837,36 @@
     }
 }
 
+<span class="kw">impl </span>From&lt;<span class="kw-2">&amp;</span>SerializedComponentBatch&gt; <span class="kw">for </span>arrow2::datatypes::Field {
+    <span class="attr">#[inline]
+    </span><span class="kw">fn </span>from(batch: <span class="kw-2">&amp;</span>SerializedComponentBatch) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::new(
+            batch.descriptor.component_name.to_string(),
+            batch.array.data_type().clone().into(),
+            <span class="bool-val">false</span>,
+        )
+        .with_metadata(
+            [
+                batch.descriptor.archetype_name.map(|name| {
+                    (
+                        FIELD_METADATA_KEY_ARCHETYPE_NAME.to_owned(),
+                        name.to_string(),
+                    )
+                }),
+                batch.descriptor.archetype_field_name.map(|name| {
+                    (
+                        FIELD_METADATA_KEY_ARCHETYPE_FIELD_NAME.to_owned(),
+                        name.to_string(),
+                    )
+                }),
+            ]
+            .into_iter()
+            .flatten()
+            .collect(),
+        )
+    }
+}
+
 <span class="comment">// ---
 
 // TODO(cmc): All these crazy types are about to disappear. ComponentBatch should only live at the
@@ -841,8 +911,8 @@
 
 <span class="kw">impl </span>LoggableBatch <span class="kw">for </span>ComponentBatchCowWithDescriptor&lt;<span class="lifetime">'_</span>&gt; {
     <span class="attr">#[inline]
-    </span><span class="kw">fn </span>to_arrow(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;arrow::array::ArrayRef&gt; {
-        <span class="self">self</span>.batch.to_arrow()
+    </span><span class="kw">fn </span>to_arrow2(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;Box&lt;<span class="kw">dyn </span>::arrow2::array::Array&gt;&gt; {
+        <span class="self">self</span>.batch.to_arrow2()
     }
 }
 
@@ -898,8 +968,8 @@
 
 <span class="kw">impl </span>LoggableBatch <span class="kw">for </span>ComponentBatchCow&lt;<span class="lifetime">'_</span>&gt; {
     <span class="attr">#[inline]
-    </span><span class="kw">fn </span>to_arrow(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;arrow::array::ArrayRef&gt; {
-        (<span class="kw-2">**</span><span class="self">self</span>).to_arrow()
+    </span><span class="kw">fn </span>to_arrow2(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;Box&lt;<span class="kw">dyn </span>::arrow2::array::Array&gt;&gt; {
+        (<span class="kw-2">**</span><span class="self">self</span>).to_arrow2()
     }
 }
 
@@ -914,8 +984,8 @@
 
 </span><span class="kw">impl</span>&lt;L: Clone + Loggable&gt; LoggableBatch <span class="kw">for </span>L {
     <span class="attr">#[inline]
-    </span><span class="kw">fn </span>to_arrow(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;arrow::array::ArrayRef&gt; {
-        L::to_arrow([std::borrow::Cow::Borrowed(<span class="self">self</span>)])
+    </span><span class="kw">fn </span>to_arrow2(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;Box&lt;<span class="kw">dyn </span>::arrow2::array::Array&gt;&gt; {
+        L::to_arrow2([std::borrow::Cow::Borrowed(<span class="self">self</span>)])
     }
 }
 
@@ -930,8 +1000,8 @@
 
 </span><span class="kw">impl</span>&lt;L: Clone + Loggable&gt; LoggableBatch <span class="kw">for </span><span class="prelude-ty">Option</span>&lt;L&gt; {
     <span class="attr">#[inline]
-    </span><span class="kw">fn </span>to_arrow(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;arrow::array::ArrayRef&gt; {
-        L::to_arrow(<span class="self">self</span>.iter().map(|v| std::borrow::Cow::Borrowed(v)))
+    </span><span class="kw">fn </span>to_arrow2(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;Box&lt;<span class="kw">dyn </span>::arrow2::array::Array&gt;&gt; {
+        L::to_arrow2(<span class="self">self</span>.iter().map(|v| std::borrow::Cow::Borrowed(v)))
     }
 }
 
@@ -946,8 +1016,8 @@
 
 </span><span class="kw">impl</span>&lt;L: Clone + Loggable&gt; LoggableBatch <span class="kw">for </span>Vec&lt;L&gt; {
     <span class="attr">#[inline]
-    </span><span class="kw">fn </span>to_arrow(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;arrow::array::ArrayRef&gt; {
-        L::to_arrow(<span class="self">self</span>.iter().map(|v| std::borrow::Cow::Borrowed(v)))
+    </span><span class="kw">fn </span>to_arrow2(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;Box&lt;<span class="kw">dyn </span>::arrow2::array::Array&gt;&gt; {
+        L::to_arrow2(<span class="self">self</span>.iter().map(|v| std::borrow::Cow::Borrowed(v)))
     }
 }
 
@@ -962,8 +1032,8 @@
 
 </span><span class="kw">impl</span>&lt;L: Loggable&gt; LoggableBatch <span class="kw">for </span>Vec&lt;<span class="prelude-ty">Option</span>&lt;L&gt;&gt; {
     <span class="attr">#[inline]
-    </span><span class="kw">fn </span>to_arrow(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;arrow::array::ArrayRef&gt; {
-        L::to_arrow_opt(
+    </span><span class="kw">fn </span>to_arrow2(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;Box&lt;<span class="kw">dyn </span>::arrow2::array::Array&gt;&gt; {
+        L::to_arrow2_opt(
             <span class="self">self</span>.iter()
                 .map(|opt| opt.as_ref().map(|v| std::borrow::Cow::Borrowed(v))),
         )
@@ -981,8 +1051,8 @@
 
 </span><span class="kw">impl</span>&lt;L: Loggable, <span class="kw">const </span>N: usize&gt; LoggableBatch <span class="kw">for </span>[L; N] {
     <span class="attr">#[inline]
-    </span><span class="kw">fn </span>to_arrow(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;arrow::array::ArrayRef&gt; {
-        L::to_arrow(<span class="self">self</span>.iter().map(|v| std::borrow::Cow::Borrowed(v)))
+    </span><span class="kw">fn </span>to_arrow2(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;Box&lt;<span class="kw">dyn </span>::arrow2::array::Array&gt;&gt; {
+        L::to_arrow2(<span class="self">self</span>.iter().map(|v| std::borrow::Cow::Borrowed(v)))
     }
 }
 
@@ -997,8 +1067,8 @@
 
 </span><span class="kw">impl</span>&lt;L: Loggable, <span class="kw">const </span>N: usize&gt; LoggableBatch <span class="kw">for </span>[<span class="prelude-ty">Option</span>&lt;L&gt;; N] {
     <span class="attr">#[inline]
-    </span><span class="kw">fn </span>to_arrow(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;arrow::array::ArrayRef&gt; {
-        L::to_arrow_opt(
+    </span><span class="kw">fn </span>to_arrow2(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;Box&lt;<span class="kw">dyn </span>::arrow2::array::Array&gt;&gt; {
+        L::to_arrow2_opt(
             <span class="self">self</span>.iter()
                 .map(|opt| opt.as_ref().map(|v| std::borrow::Cow::Borrowed(v))),
         )
@@ -1016,8 +1086,8 @@
 
 </span><span class="kw">impl</span>&lt;L: Loggable&gt; LoggableBatch <span class="kw">for </span>[L] {
     <span class="attr">#[inline]
-    </span><span class="kw">fn </span>to_arrow(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;arrow::array::ArrayRef&gt; {
-        L::to_arrow(<span class="self">self</span>.iter().map(|v| std::borrow::Cow::Borrowed(v)))
+    </span><span class="kw">fn </span>to_arrow2(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;Box&lt;<span class="kw">dyn </span>::arrow2::array::Array&gt;&gt; {
+        L::to_arrow2(<span class="self">self</span>.iter().map(|v| std::borrow::Cow::Borrowed(v)))
     }
 }
 
@@ -1032,8 +1102,8 @@
 
 </span><span class="kw">impl</span>&lt;L: Loggable&gt; LoggableBatch <span class="kw">for </span>[<span class="prelude-ty">Option</span>&lt;L&gt;] {
     <span class="attr">#[inline]
-    </span><span class="kw">fn </span>to_arrow(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;arrow::array::ArrayRef&gt; {
-        L::to_arrow_opt(
+    </span><span class="kw">fn </span>to_arrow2(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SerializationResult&lt;Box&lt;<span class="kw">dyn </span>::arrow2::array::Array&gt;&gt; {
+        L::to_arrow2_opt(
             <span class="self">self</span>.iter()
                 .map(|opt| opt.as_ref().map(|v| std::borrow::Cow::Borrowed(v))),
         )

@@ -604,15 +604,15 @@
 <a href="#604" id="604">604</a>
 <a href="#605" id="605">605</a>
 <a href="#606" id="606">606</a>
-<a href="#607" id="607">607</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span>arrow::{
-    array::{
-        Array <span class="kw">as </span>ArrowArray, ListArray <span class="kw">as </span>ArrowListArray, StructArray <span class="kw">as </span>ArrowStructArray,
-        UInt64Array <span class="kw">as </span>ArrowUInt64Array,
-    },
-    buffer::{OffsetBuffer <span class="kw">as </span>ArrowOffsets, ScalarBuffer <span class="kw">as </span>ArrowScalarBuffer},
+    array::{Array <span class="kw">as _</span>, StructArray <span class="kw">as </span>ArrowStructArray, UInt64Array <span class="kw">as </span>ArrowUInt64Array},
+    buffer::ScalarBuffer <span class="kw">as </span>ArrowScalarBuffer,
+};
+<span class="kw">use </span>arrow2::{
+    array::{Array <span class="kw">as </span>Arrow2Array, ListArray <span class="kw">as </span>Arrow2ListArray},
+    offset::Offsets <span class="kw">as </span>ArrowOffsets,
 };
 <span class="kw">use </span>itertools::Itertools <span class="kw">as _</span>;
 <span class="kw">use </span>re_log_types::Timeline;
@@ -876,23 +876,21 @@
                     .collect_vec();
                 <span class="kw">let </span>sorted_arrays = sorted_arrays
                     .iter()
-                    .map(|array| <span class="kw-2">&amp;**</span>array <span class="kw">as </span><span class="kw-2">&amp;</span><span class="kw">dyn </span>ArrowArray)
+                    .map(|array| <span class="kw-2">&amp;**</span>array <span class="kw">as </span><span class="kw-2">&amp;</span><span class="kw">dyn </span>Arrow2Array)
                     .collect_vec();
 
                 <span class="kw">let </span>datatype = original.data_type().clone();
-                <span class="kw">let </span>offsets =
-                    ArrowOffsets::from_lengths(sorted_arrays.iter().map(|array| array.len()));
+                <span class="attr">#[allow(clippy::unwrap_used)] </span><span class="comment">// yep, these are in fact lengths
+                </span><span class="kw">let </span>offsets =
+                    ArrowOffsets::try_from_lengths(sorted_arrays.iter().map(|array| array.len()))
+                        .unwrap();
                 <span class="attr">#[allow(clippy::unwrap_used)] </span><span class="comment">// these are slices of the same outer array
-                </span><span class="kw">let </span>values = re_arrow_util::arrow_util::concat_arrays(<span class="kw-2">&amp;</span>sorted_arrays).unwrap();
+                </span><span class="kw">let </span>values = re_arrow_util::arrow2_util::concat_arrays(<span class="kw-2">&amp;</span>sorted_arrays).unwrap();
                 <span class="kw">let </span>validity = original
-                    .nulls()
-                    .map(|validity| swaps.iter().map(|<span class="kw-2">&amp;</span>from| validity.is_valid(from)).collect());
+                    .validity()
+                    .map(|validity| swaps.iter().map(|<span class="kw-2">&amp;</span>from| validity.get_bit(from)).collect());
 
-                <span class="kw">let </span>field = <span class="kw">match </span>datatype {
-                    arrow::datatypes::DataType::List(field) =&gt; field.clone(),
-                    <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(<span class="string">"This is always s list array"</span>),
-                };
-                <span class="kw-2">*</span>original = ArrowListArray::new(field, offsets, values, validity);
+                <span class="kw-2">*</span>original = Arrow2ListArray::&lt;i32&gt;::new(datatype, offsets.into(), values, validity);
             }
         }
 

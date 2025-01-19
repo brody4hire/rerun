@@ -811,11 +811,15 @@
 <a href="#811" id="811">811</a>
 <a href="#812" id="812">812</a>
 <a href="#813" id="813">813</a>
+<a href="#814" id="814">814</a>
+<a href="#815" id="815">815</a>
+<a href="#816" id="816">816</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
 <span class="kw">use </span>std::sync::atomic::AtomicU64;
 <span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span>arrow::datatypes::DataType <span class="kw">as </span>ArrowDataType;
+<span class="kw">use </span>arrow2::datatypes::DataType <span class="kw">as </span>Arrow2DataType;
 <span class="kw">use </span>nohash_hasher::IntMap;
 
 <span class="kw">use </span>re_chunk::{Chunk, ChunkId, RowId};
@@ -1220,7 +1224,7 @@
     </span><span class="comment">//
     // TODO(cmc): this would become fairly problematic in a world where each chunk can use a
     // different datatype for a given component.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) type_registry: IntMap&lt;ComponentName, ArrowDataType&gt;,
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) type_registry: IntMap&lt;ComponentName, Arrow2DataType&gt;,
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) per_column_metadata:
         IntMap&lt;EntityPath, IntMap&lt;ComponentName, IntMap&lt;ComponentDescriptor, ColumnMetadataState&gt;&gt;&gt;,
@@ -1453,7 +1457,9 @@
     <span class="doccomment">/// Lookup the _latest_ arrow [`ArrowDataType`] used by a specific [`re_types_core::Component`].
     </span><span class="attr">#[inline]
     </span><span class="kw">pub fn </span>lookup_datatype(<span class="kw-2">&amp;</span><span class="self">self</span>, component_name: <span class="kw-2">&amp;</span>ComponentName) -&gt; <span class="prelude-ty">Option</span>&lt;ArrowDataType&gt; {
-        <span class="self">self</span>.type_registry.get(component_name).cloned()
+        <span class="self">self</span>.type_registry
+            .get(component_name)
+            .map(|dt| dt.clone().into())
     }
 
     <span class="doccomment">/// Lookup the [`ColumnMetadata`] for a specific [`EntityPath`] and [`re_types_core::Component`].

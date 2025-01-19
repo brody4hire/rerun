@@ -195,6 +195,7 @@
 <a href="#195" id="195">195</a>
 <a href="#196" id="196">196</a>
 <a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Rerun Spatial Views
 //!
 //! Views that show entities in a 2D or 3D spatial relationship.
@@ -237,6 +238,7 @@
 </span><span class="kw">use </span>re_view::DataResultQuery <span class="kw">as _</span>;
 <span class="kw">use </span>re_viewer_context::{ImageDecodeCache, ViewContext, ViewerContext};
 
+<span class="kw">use </span>re_log_types::debug_assert_archetype_has_components;
 <span class="kw">use </span>re_renderer::RenderContext;
 <span class="kw">use </span>re_types::{
     archetypes,
@@ -261,7 +263,7 @@
 ) -&gt; <span class="prelude-ty">Option</span>&lt;Resolution&gt; {
     <span class="comment">// First check assumptions:
     </span><span class="macro">static_assert_struct_has_fields!</span>(archetypes::Image, format: components::ImageFormat);
-    <span class="macro">static_assert_struct_has_fields!</span>(archetypes::EncodedImage, blob: components::Blob);
+    <span class="macro">debug_assert_archetype_has_components!</span>(archetypes::EncodedImage, blob: components::Blob);
 
     <span class="kw">let </span>db = ctx.recording();
 

@@ -320,8 +320,6 @@
 <a href="#320" id="320">320</a>
 <a href="#321" id="321">321</a>
 <a href="#322" id="322">322</a>
-<a href="#323" id="323">323</a>
-<a href="#324" id="324">324</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>itertools::Itertools <span class="kw">as _</span>;
 
 <span class="kw">use </span>re_renderer::{LineDrawableBuilder, PickingLayerInstanceId, PointCloudBuilder};
@@ -590,9 +588,7 @@
                                 .map_or(<span class="kw-2">&amp;</span>[], |class_ids| bytemuck::cast_slice(class_ids)),
                             keypoint_ids: keypoint_ids
                                 .map_or(<span class="kw-2">&amp;</span>[], |keypoint_ids| bytemuck::cast_slice(keypoint_ids)),
-                            show_labels: show_labels
-                                .map(|b| !b.is_empty() &amp;&amp; b.value(<span class="number">0</span>))
-                                .map(Into::into),
+                            show_labels: show_labels.unwrap_or_default().get(<span class="number">0</span>).map(Into::into),
                         }
                     },
                 );

@@ -298,16 +298,14 @@
 <a href="#298" id="298">298</a>
 <a href="#299" id="299">299</a>
 <a href="#300" id="300">300</a>
-<a href="#301" id="301">301</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::BTreeMap;
 <span class="kw">use </span>std::sync::Arc;
 
-<span class="kw">use </span>arrow::array::Array <span class="kw">as _</span>;
 <span class="kw">use </span>egui_extras::{Column, TableRow};
 <span class="kw">use </span>itertools::Itertools;
 
 <span class="kw">use </span>re_byte_size::SizeBytes;
-<span class="kw">use </span>re_chunk_store::external::re_chunk::TransportChunk;
+<span class="kw">use </span>re_chunk_store::external::re_chunk::{Arrow2Array, TransportChunk};
 <span class="kw">use </span>re_chunk_store::Chunk;
 <span class="kw">use </span>re_log_types::{TimeZone, Timeline};
 <span class="kw">use </span>re_types::datatypes::TimeInt;

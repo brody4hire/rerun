@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["arrow2","glam","image","ndarray","uuid"]};
+window.SIDEBAR_ITEMS = {"mod":["glam","image","ndarray","uuid"]};

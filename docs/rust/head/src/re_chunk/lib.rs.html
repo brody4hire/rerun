@@ -57,6 +57,7 @@
 <a href="#57" id="57">57</a>
 <a href="#58" id="58">58</a>
 <a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! A chunk of Rerun data, encoded using Arrow. Used for logging, transport, storage and compute.
 //!
 //! ## Feature flags
@@ -100,7 +101,7 @@
 <span class="comment">// Re-exports
 
 </span><span class="attr">#[doc(no_inline)]
-</span><span class="kw">pub use </span>arrow::array::Array <span class="kw">as </span>ArrowArray;
+</span><span class="kw">pub use </span>arrow2::array::Array <span class="kw">as </span>Arrow2Array;
 <span class="attr">#[doc(no_inline)]
 </span><span class="kw">pub use </span>re_log_types::{EntityPath, TimeInt, TimePoint, Timeline, TimelineName};
 <span class="attr">#[doc(no_inline)]
@@ -108,6 +109,7 @@
 
 <span class="kw">pub mod </span>external {
     <span class="kw">pub use </span>arrow;
+    <span class="kw">pub use </span>arrow2;
     <span class="kw">pub use </span>nohash_hasher;
 
     <span class="kw">pub use </span>re_byte_size;

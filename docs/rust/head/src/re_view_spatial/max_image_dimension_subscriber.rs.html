@@ -235,7 +235,7 @@
             {
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(blob) = blob.first() {
                     <span class="kw">if let </span><span class="prelude-val">Some</span>([width, height]) = size_from_blob(
-                        blob,
+                        blob.as_slice(),
                         media_type.and_then(|v| v.first().map(|v| MediaType(v.clone().into()))),
                     ) {
                         <span class="kw">let </span>max_dim = <span class="self">self

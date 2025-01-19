@@ -633,6 +633,13 @@
 <a href="#633" id="633">633</a>
 <a href="#634" id="634">634</a>
 <a href="#635" id="635">635</a>
+<a href="#636" id="636">636</a>
+<a href="#637" id="637">637</a>
+<a href="#638" id="638">638</a>
+<a href="#639" id="639">639</a>
+<a href="#640" id="640">640</a>
+<a href="#641" id="641">641</a>
+<a href="#642" id="642">642</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Communications with an Rerun Data Platform gRPC server.
 
 </span><span class="kw">use </span>std::{collections::HashMap, error::Error, sync::Arc};
@@ -657,7 +664,8 @@
     common::v0::RecordingId,
     remote_store::v0::{
         storage_node_client::StorageNodeClient, CatalogFilter, FetchRecordingRequest,
-        QueryCatalogRequest,
+        QueryCatalogRequest, CATALOG_APP_ID_FIELD_NAME, CATALOG_ID_FIELD_NAME,
+        CATALOG_START_TIME_FIELD_NAME,
     },
 };
 <span class="kw">use </span>re_types::{
@@ -918,27 +926,33 @@
 
     <span class="kw">let </span>(_field, data) = tc
         .components()
-        .find(|(f, <span class="kw">_</span>)| f.name() == <span class="string">"application_id"</span>)
+        .find(|(f, <span class="kw">_</span>)| f.name() == CATALOG_APP_ID_FIELD_NAME)
         .ok_or(StreamError::ChunkError(re_chunk::ChunkError::Malformed {
-            reason: <span class="string">"no application_id field found"</span>.to_owned(),
+            reason: <span class="string">"no {CATALOG_APP_ID_FIELD_NAME} field found"</span>.to_owned(),
         }))<span class="question-mark">?</span>;
     <span class="kw">let </span>app_id = data
         .downcast_array_ref::&lt;arrow::array::StringArray&gt;()
         .ok_or(StreamError::ChunkError(re_chunk::ChunkError::Malformed {
-            reason: <span class="macro">format!</span>(<span class="string">"application_id must be a utf8 array: {:?}"</span>, tc.schema_ref()),
+            reason: <span class="macro">format!</span>(
+                <span class="string">"{CATALOG_APP_ID_FIELD_NAME} must be a utf8 array: {:?}"</span>,
+                tc.schema_ref()
+            ),
         }))<span class="question-mark">?
         </span>.value(<span class="number">0</span>);
 
     <span class="kw">let </span>(_field, data) = tc
         .components()
-        .find(|(f, <span class="kw">_</span>)| f.name() == <span class="string">"start_time"</span>)
+        .find(|(f, <span class="kw">_</span>)| f.name() == CATALOG_START_TIME_FIELD_NAME)
         .ok_or(StreamError::ChunkError(re_chunk::ChunkError::Malformed {
-            reason: <span class="string">"no start_time field found"</span>.to_owned(),
+            reason: <span class="string">"no {CATALOG_START_TIME_FIELD_NAME}} field found"</span>.to_owned(),
         }))<span class="question-mark">?</span>;
     <span class="kw">let </span>start_time = data
-        .downcast_array_ref::&lt;arrow::array::Int64Array&gt;()
+        .downcast_array_ref::&lt;arrow::array::TimestampNanosecondArray&gt;()
         .ok_or(StreamError::ChunkError(re_chunk::ChunkError::Malformed {
-            reason: <span class="macro">format!</span>(<span class="string">"start_time must be an int64 array: {:?}"</span>, tc.schema_ref()),
+            reason: <span class="macro">format!</span>(
+                <span class="string">"{CATALOG_START_TIME_FIELD_NAME} must be a Timestamp array: {:?}"</span>,
+                tc.schema_ref()
+            ),
         }))<span class="question-mark">?
         </span>.value(<span class="number">0</span>);
 
@@ -1120,7 +1134,7 @@
             </span>)))<span class="question-mark">?</span>;
 
         <span class="kw">let </span>recording_uri_arrays: Vec&lt;ArrowArrayRef&gt; = chunk
-            .iter_slices::&lt;String&gt;(<span class="string">"id"</span>.into())
+            .iter_slices::&lt;String&gt;(CATALOG_ID_FIELD_NAME.into())
             .map(|id| {
                 <span class="kw">let </span>rec_id = <span class="kw-2">&amp;</span>id[<span class="number">0</span>]; <span class="comment">// each component batch is of length 1 i.e. single 'id' value
 

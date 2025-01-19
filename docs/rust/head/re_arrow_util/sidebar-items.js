@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["arrow_util"]};
+window.SIDEBAR_ITEMS = {"mod":["arrow2_util","arrow_util"]};

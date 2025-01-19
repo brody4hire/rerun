@@ -72,6 +72,9 @@
 <a href="#72" id="72">72</a>
 <a href="#73" id="73">73</a>
 <a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Caching datastructures for `re_query`.
 
 </span><span class="kw">mod </span>cache;
@@ -137,6 +140,9 @@
 
     <span class="attr">#[error(<span class="string">"Error serializing: {0}"</span>)]
     </span>SerializationError(<span class="attr">#[from] </span>re_types_core::SerializationError),
+
+    <span class="attr">#[error(<span class="string">"Error converting arrow data: {0}"</span>)]
+    </span>ArrowError(<span class="attr">#[from] </span>arrow2::error::Error),
 
     <span class="attr">#[error(<span class="string">"Not implemented"</span>)]
     </span>NotImplemented,

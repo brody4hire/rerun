@@ -94,18 +94,11 @@
 <a href="#94" id="94">94</a>
 <a href="#95" id="95">95</a>
 <a href="#96" id="96">96</a>
-<a href="#97" id="97">97</a>
-<a href="#98" id="98">98</a>
-<a href="#99" id="99">99</a>
-<a href="#100" id="100">100</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>arrow::array::{
-    Array <span class="kw">as </span>ArrowArray, ArrayRef <span class="kw">as </span>ArrowArrayRef, StringArray <span class="kw">as </span>ArrowStringArray,
-};
+</pre></div><pre class="rust"><code><span class="kw">use </span>arrow2::array::{Array, Utf8Array};
 <span class="kw">use </span>itertools::Itertools;
 <span class="kw">use </span>nohash_hasher::IntMap;
 
-<span class="kw">use </span>re_arrow_util::{arrow_util, ArrowArrayDowncastRef <span class="kw">as _</span>};
-<span class="kw">use </span>re_types_core::arrow_helpers::as_array_ref;
+<span class="kw">use </span>re_arrow_util::{arrow2_util, Arrow2ArrayDowncastRef <span class="kw">as _</span>};
 
 <span class="kw">use </span><span class="kw">crate</span>::Chunk;
 
@@ -154,36 +147,35 @@
                     <span class="kw">let </span>arrays = list_array
                         .iter()
                         .map(|utf8_array| {
-                            utf8_array.map(|array| -&gt; ArrowArrayRef {
-                                <span class="kw">let </span><span class="prelude-val">Some</span>(array) = array.downcast_array_ref::&lt;ArrowStringArray&gt;()
+                            utf8_array.map(|array| {
+                                <span class="kw">let </span><span class="prelude-val">Some</span>(array) = array.downcast_array2_ref::&lt;Utf8Array&lt;i32&gt;&gt;()
                                 <span class="kw">else </span>{
                                     <span class="comment">// Unreachable, just avoiding unwraps.
                                     </span><span class="kw">return </span>array;
                                 };
 
-                                as_array_ref(
-                                    array
-                                        .iter()
-                                        .map(|s| {
-                                            s.map(|s| {
-                                                <span class="kw">let </span><span class="kw-2">mut </span>s = s.to_owned();
-                                                <span class="kw">for </span>(from, to) <span class="kw">in </span>PATCHES {
-                                                    s = s.replace(from, to);
-                                                }
-                                                s
-                                            })
+                                array
+                                    .iter()
+                                    .map(|s| {
+                                        s.map(|s| {
+                                            <span class="kw">let </span><span class="kw-2">mut </span>s = s.to_owned();
+                                            <span class="kw">for </span>(from, to) <span class="kw">in </span>PATCHES {
+                                                s = s.replace(from, to);
+                                            }
+                                            s
                                         })
-                                        .collect::&lt;ArrowStringArray&gt;(),
-                                )
+                                    })
+                                    .collect::&lt;Utf8Array&lt;i32&gt;&gt;()
+                                    .to_boxed()
                             })
                         })
                         .collect_vec();
                     <span class="kw">let </span>arrays = arrays
                         .iter()
-                        .map(|a| a.as_deref() <span class="kw">as </span><span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="kw">dyn </span>ArrowArray&gt;)
+                        .map(|a| a.as_deref() <span class="kw">as </span><span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="kw">dyn </span>Array&gt;)
                         .collect_vec();
 
-                    <span class="kw">if let </span><span class="prelude-val">Some</span>(list_array_patched) = arrow_util::arrays_to_list_array_opt(<span class="kw-2">&amp;</span>arrays)
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(list_array_patched) = arrow2_util::arrays_to_list_array_opt(<span class="kw-2">&amp;</span>arrays)
                     {
                         <span class="kw-2">*</span>list_array = list_array_patched;
                     }
@@ -192,7 +184,7 @@
         }
 
         <span class="kw">for </span>(desc, list_array) <span class="kw">in </span>components_patched {
-            chunk.components.insert_descriptor(desc, list_array);
+            chunk.components.insert_descriptor_arrow2(desc, list_array);
         }
 
         chunk

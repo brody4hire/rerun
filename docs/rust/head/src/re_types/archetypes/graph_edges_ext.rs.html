@@ -13,23 +13,19 @@
 <a href="#13" id="13">13</a>
 <a href="#14" id="14">14</a>
 <a href="#15" id="15">15</a>
-<a href="#16" id="16">16</a>
-<a href="#17" id="17">17</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::GraphEdges;
 
 <span class="kw">impl </span>GraphEdges {
     <span class="doccomment">/// Creates a graph with undirected edges.
     </span><span class="attr">#[inline(always)]
-    </span><span class="kw">pub fn </span>with_undirected_edges(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
-        <span class="self">self</span>.graph_type = <span class="prelude-val">Some</span>(<span class="kw">crate</span>::components::GraphType::Undirected);
-        <span class="self">self
-    </span>}
+    </span><span class="kw">pub fn </span>with_undirected_edges(<span class="self">self</span>) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.with_graph_type(<span class="kw">crate</span>::components::GraphType::Undirected)
+    }
 
     <span class="doccomment">/// Creates a graph with directed edges.
     </span><span class="attr">#[inline(always)]
-    </span><span class="kw">pub fn </span>with_directed_edges(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
-        <span class="self">self</span>.graph_type = <span class="prelude-val">Some</span>(<span class="kw">crate</span>::components::GraphType::Directed);
-        <span class="self">self
-    </span>}
+    </span><span class="kw">pub fn </span>with_directed_edges(<span class="self">self</span>) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.with_graph_type(<span class="kw">crate</span>::components::GraphType::Directed)
+    }
 }
 </code></pre></div></section></main></body></html>

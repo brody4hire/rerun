@@ -14,22 +14,4 @@
 <span class="comment">// binary values
 </span><span class="macro">assert_eq!</span>(array.value(<span class="number">0</span>), <span class="string">b"foo"</span>);
 <span class="macro">assert_eq!</span>(array.value(<span class="number">1</span>), <span class="string">b"\x00\x01\x02"</span>);</code></pre></div>
-<h2 id="example-incrementally-writing-bytes-with-write_bytes"><a class="doc-anchor" href="#example-incrementally-writing-bytes-with-write_bytes">§</a>Example incrementally writing bytes with <code>write_bytes</code></h2>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span><span class="kw-2">mut </span>builder = GenericBinaryBuilder::&lt;i32&gt;::new();
-
-<span class="comment">// Write data in multiple `write_bytes` calls
-</span><span class="macro">write!</span>(builder, <span class="string">"foo"</span>).unwrap();
-<span class="macro">write!</span>(builder, <span class="string">"bar"</span>).unwrap();
-<span class="comment">// The next call to append_value finishes the current string
-// including all previously written strings.
-</span>builder.append_value(<span class="string">"baz"</span>);
-
-<span class="comment">// Write second value with a single write call
-</span><span class="macro">write!</span>(builder, <span class="string">"v2"</span>).unwrap();
-<span class="comment">// finish the value by calling append_value with an empty string
-</span>builder.append_value(<span class="string">""</span>);
-
-<span class="kw">let </span>array = builder.finish();
-<span class="macro">assert_eq!</span>(array.value(<span class="number">0</span>), <span class="string">"foobarbaz"</span>.as_bytes());
-<span class="macro">assert_eq!</span>(array.value(<span class="number">1</span>), <span class="string">"v2"</span>.as_bytes());</code></pre></div>
 </div></details><h2 id="aliased-type" class="section-header">Aliased Type<a href="#aliased-type" class="anchor">§</a></h2><pre class="rust item-decl"><code>struct GenericBinaryBuilder&lt;O&gt; { <span class="comment">/* private fields */</span> }</code></pre><script src="../../../../../../type.impl/re_view/external/re_chunk_store/external/arrow/array/builder/struct.GenericByteBuilder.js" data-self-path="re_view::external::re_chunk_store::external::arrow::array::builder::GenericBinaryBuilder" async></script></section></div></main></body></html>

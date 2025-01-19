@@ -30,11 +30,11 @@ var srcIndex = new Map(JSON.parse('[\
 ["range_zip",["",[],["range_zip.rs"]]],\
 ["raw_mesh",["",[],["main.rs"]]],\
 ["re_analytics",["",[["native",[],["config.rs","mod.rs","pipeline.rs","sink.rs"]]],["cli.rs","event.rs","lib.rs","posthog.rs"]]],\
-["re_arrow_util",["",[],["arrow_util.rs","lib.rs"]]],\
+["re_arrow_util",["",[],["arrow2_util.rs","arrow_util.rs","lib.rs"]]],\
 ["re_blueprint_tree",["",[],["blueprint_tree.rs","lib.rs"]]],\
 ["re_build_info",["",[],["build_info.rs","crate_version.rs","lib.rs"]]],\
 ["re_build_tools",["",[],["git.rs","hashing.rs","lib.rs","rebuild_detector.rs"]]],\
-["re_byte_size",["",[],["arrow_sizes.rs","lib.rs","primitive_sizes.rs","smallvec_sizes.rs","std_sizes.rs","tuple_sizes.rs"]]],\
+["re_byte_size",["",[],["arrow2_sizes.rs","arrow_sizes.rs","lib.rs","primitive_sizes.rs","smallvec_sizes.rs","std_sizes.rs","tuple_sizes.rs"]]],\
 ["re_capabilities",["",[],["lib.rs","main_thread_token.rs"]]],\
 ["re_case",["",[],["lib.rs"]]],\
 ["re_chunk",["",[],["batcher.rs","builder.rs","chunk.rs","helpers.rs","id.rs","iter.rs","latest_at.rs","lib.rs","merge.rs","migration.rs","range.rs","shuffle.rs","slice.rs","transport.rs"]]],\

@@ -2701,16 +2701,6 @@
 <a href="#2701" id="2701">2701</a>
 <a href="#2702" id="2702">2702</a>
 <a href="#2703" id="2703">2703</a>
-<a href="#2704" id="2704">2704</a>
-<a href="#2705" id="2705">2705</a>
-<a href="#2706" id="2706">2706</a>
-<a href="#2707" id="2707">2707</a>
-<a href="#2708" id="2708">2708</a>
-<a href="#2709" id="2709">2709</a>
-<a href="#2710" id="2710">2710</a>
-<a href="#2711" id="2711">2711</a>
-<a href="#2712" id="2712">2712</a>
-<a href="#2713" id="2713">2713</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     collections::BTreeSet,
     sync::{
@@ -2720,20 +2710,24 @@
 };
 
 <span class="kw">use </span>arrow::{
-    array::{
-        ArrayRef <span class="kw">as </span>ArrowArrayRef, BooleanArray <span class="kw">as </span>ArrowBooleanArray,
-        PrimitiveArray <span class="kw">as </span>ArrowPrimitiveArray, RecordBatch <span class="kw">as </span>ArrowRecordBatch,
-    },
+    array::{ArrayRef <span class="kw">as </span>ArrowArrayRef, RecordBatch <span class="kw">as </span>ArrowRecordBatch},
     buffer::ScalarBuffer <span class="kw">as </span>ArrowScalarBuffer,
     datatypes::{
         DataType <span class="kw">as </span>ArrowDataType, Fields <span class="kw">as </span>ArrowFields, Schema <span class="kw">as </span>ArrowSchema,
         SchemaRef <span class="kw">as </span>ArrowSchemaRef,
     },
 };
-<span class="kw">use </span>itertools::{Either, Itertools <span class="kw">as _</span>};
+<span class="kw">use </span>arrow2::{
+    array::{
+        Array <span class="kw">as </span>Arrow2Array, BooleanArray <span class="kw">as </span>Arrow2BooleanArray,
+        PrimitiveArray <span class="kw">as </span>Arrow2PrimitiveArray,
+    },
+    Either,
+};
+<span class="kw">use </span>itertools::Itertools;
 <span class="kw">use </span>nohash_hasher::{IntMap, IntSet};
 
-<span class="kw">use </span>re_arrow_util::{arrow_util::into_arrow_ref, ArrowArrayDowncastRef <span class="kw">as _</span>};
+<span class="kw">use </span>re_arrow_util::Arrow2ArrayDowncastRef <span class="kw">as _</span>;
 <span class="kw">use </span>re_chunk::{
     external::arrow::array::ArrayRef, Chunk, ComponentName, EntityPath, RangeQuery, RowId, TimeInt,
     Timeline, UnitChunkShared,
@@ -3228,9 +3222,9 @@
 
             <span class="kw">let </span>values = list_array
                 .values()
-                .downcast_array_ref::&lt;ArrowBooleanArray&gt;()<span class="question-mark">?</span>;
+                .downcast_array2_ref::&lt;Arrow2BooleanArray&gt;()<span class="question-mark">?</span>;
 
-            <span class="kw">let </span>indices = ArrowPrimitiveArray::from(
+            <span class="kw">let </span>indices = Arrow2PrimitiveArray::from_vec(
                 values
                     .iter()
                     .enumerate()
@@ -3873,7 +3867,7 @@
                                 .components()
                                 .iter_flattened()
                                 .next()
-                                .map(|(<span class="kw">_</span>, list_array)| list_array.slice(s.cursor <span class="kw">as </span>usize, <span class="number">1</span>))
+                                .map(|(<span class="kw">_</span>, list_array)| list_array.sliced(s.cursor <span class="kw">as </span>usize, <span class="number">1</span>))
 
                         }
 
@@ -3886,7 +3880,7 @@
                                 }),
                                 ColumnDescriptor::Time(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
                             })<span class="question-mark">?</span>;
-                            unit.components().get_by_descriptor(<span class="kw-2">&amp;</span>component_desc).cloned()
+                            unit.components().get_by_descriptor(<span class="kw-2">&amp;</span>component_desc).map(|list_array| list_array.to_boxed())
                         }
                     };
 
@@ -3920,7 +3914,7 @@
                     .get(<span class="kw-2">*</span>view_idx)
                     .cloned()
                     .flatten()
-                    .map(into_arrow_ref)
+                    .map(|a| a.into())
                     .unwrap_or_else(|| arrow::array::new_null_array(<span class="kw-2">&amp;</span>column.arrow_datatype(), <span class="number">1</span>)),
             })
             .collect_vec();
@@ -3939,21 +3933,7 @@
     </span><span class="attr">#[inline]
     </span><span class="kw">pub fn </span>next_row_batch(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;ArrowRecordBatch&gt; {
         <span class="kw">let </span>row = <span class="self">self</span>.next_row()<span class="question-mark">?</span>;
-        <span class="kw">match </span>ArrowRecordBatch::try_new_with_options(
-            <span class="self">self</span>.schema().clone(),
-            row,
-            <span class="kw-2">&amp;</span>arrow::array::RecordBatchOptions::new().with_row_count(<span class="prelude-val">Some</span>(<span class="number">1</span>)),
-        ) {
-            <span class="prelude-val">Ok</span>(batch) =&gt; <span class="prelude-val">Some</span>(batch),
-            <span class="prelude-val">Err</span>(err) =&gt; {
-                <span class="kw">if </span><span class="macro">cfg!</span>(debug_assertions) {
-                    <span class="macro">panic!</span>(<span class="string">"Failed to create record batch: {err}"</span>);
-                } <span class="kw">else </span>{
-                    <span class="macro">re_log::error_once!</span>(<span class="string">"Failed to create record batch: {err}"</span>);
-                    <span class="prelude-val">None
-                </span>}
-            }
-        }
+        ArrowRecordBatch::try_new(<span class="self">self</span>.schema().clone(), row).ok()
     }
 
     <span class="attr">#[inline]

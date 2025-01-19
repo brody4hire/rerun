@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["arrow","re_chunk"]};
+window.SIDEBAR_ITEMS = {"mod":["arrow","arrow2","re_chunk"]};

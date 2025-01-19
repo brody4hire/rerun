@@ -833,13 +833,21 @@
 <a href="#833" id="833">833</a>
 <a href="#834" id="834">834</a>
 <a href="#835" id="835">835</a>
+<a href="#836" id="836">836</a>
+<a href="#837" id="837">837</a>
+<a href="#838" id="838">838</a>
+<a href="#839" id="839">839</a>
+<a href="#840" id="840">840</a>
+<a href="#841" id="841">841</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>arrow::array::StructArray <span class="kw">as </span>ArrowStructArray;
-<span class="kw">use </span>arrow::array::{Array <span class="kw">as </span>ArrowArray, ListArray <span class="kw">as </span>ArrowListArray};
 <span class="kw">use </span>arrow::buffer::ScalarBuffer <span class="kw">as </span>ArrowScalarBuffer;
+<span class="kw">use </span>arrow2::array::{Array <span class="kw">as </span>Arrow2Array, ListArray <span class="kw">as </span>Arrow2ListArray};
 <span class="kw">use </span>itertools::{izip, Itertools};
 <span class="kw">use </span>nohash_hasher::IntMap;
 
-<span class="kw">use </span>re_arrow_util::{arrow_util, ArrowArrayDowncastRef <span class="kw">as _</span>};
+<span class="kw">use </span>re_arrow_util::{
+    arrow2_util, arrow_util, Arrow2ArrayDowncastRef <span class="kw">as _</span>, ArrowArrayDowncastRef <span class="kw">as _</span>,
+};
 
 <span class="kw">use crate</span>::{chunk::ChunkComponents, Chunk, ChunkError, ChunkId, ChunkResult, TimeColumn};
 
@@ -940,15 +948,17 @@
                         ));
 
                         <span class="kw">let </span>list_array =
-                            arrow_util::concat_arrays(<span class="kw-2">&amp;</span>[lhs_list_array, rhs_list_array]).ok()<span class="question-mark">?</span>;
-                        <span class="kw">let </span>list_array = list_array.downcast_array_ref::&lt;ArrowListArray&gt;()<span class="question-mark">?</span>.clone();
+                            arrow2_util::concat_arrays(<span class="kw-2">&amp;</span>[lhs_list_array, rhs_list_array]).ok()<span class="question-mark">?</span>;
+                        <span class="kw">let </span>list_array = list_array
+                            .downcast_array2_ref::&lt;Arrow2ListArray&lt;i32&gt;&gt;()<span class="question-mark">?
+                            </span>.clone();
 
                         <span class="prelude-val">Some</span>((component_desc.clone(), list_array))
                     } <span class="kw">else </span>{
                         <span class="macro">re_tracing::profile_scope!</span>(<span class="string">"pad"</span>);
                         <span class="prelude-val">Some</span>((
                             component_desc.clone(),
-                            arrow_util::pad_list_array_back(
+                            arrow2_util::pad_list_array_back(
                                 lhs_list_array,
                                 <span class="self">self</span>.num_rows() + rhs.num_rows(),
                             ),
@@ -979,15 +989,17 @@
                         ));
 
                         <span class="kw">let </span>list_array =
-                            arrow_util::concat_arrays(<span class="kw-2">&amp;</span>[lhs_list_array, rhs_list_array]).ok()<span class="question-mark">?</span>;
-                        <span class="kw">let </span>list_array = list_array.downcast_array_ref::&lt;ArrowListArray&gt;()<span class="question-mark">?</span>.clone();
+                            arrow2_util::concat_arrays(<span class="kw-2">&amp;</span>[lhs_list_array, rhs_list_array]).ok()<span class="question-mark">?</span>;
+                        <span class="kw">let </span>list_array = list_array
+                            .downcast_array2_ref::&lt;Arrow2ListArray&lt;i32&gt;&gt;()<span class="question-mark">?
+                            </span>.clone();
 
                         <span class="prelude-val">Some</span>((component_desc.clone(), list_array))
                     } <span class="kw">else </span>{
                         <span class="macro">re_tracing::profile_scope!</span>(<span class="string">"pad"</span>);
                         <span class="prelude-val">Some</span>((
                             component_desc.clone(),
-                            arrow_util::pad_list_array_front(
+                            arrow2_util::pad_list_array_front(
                                 rhs_list_array,
                                 <span class="self">self</span>.num_rows() + rhs.num_rows(),
                             ),
@@ -1000,7 +1012,7 @@
         <span class="kw">let </span>components = {
             <span class="kw">let </span><span class="kw-2">mut </span>per_name = ChunkComponents::default();
             <span class="kw">for </span>(component_desc, list_array) <span class="kw">in </span>components {
-                per_name.insert_descriptor(component_desc.clone(), list_array);
+                per_name.insert_descriptor_arrow2(component_desc.clone(), list_array);
             }
             per_name
         };

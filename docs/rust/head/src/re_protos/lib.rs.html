@@ -277,6 +277,18 @@
 <a href="#277" id="277">277</a>
 <a href="#278" id="278">278</a>
 <a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! This crate contains generated types for the remote store gRPC service API.
 //! Generation is done using the `re_protos_builder` crate.
 //!
@@ -327,8 +339,20 @@
 
 <span class="doccomment">/// Generated types for the remote store gRPC service API v0.
 </span><span class="kw">pub mod </span>remote_store {
+
     <span class="kw">pub mod </span>v0 {
         <span class="kw">pub use </span><span class="kw">crate</span>::v0::rerun_remote_store_v0::<span class="kw-2">*</span>;
+
+        <span class="doccomment">/// Recording catalog mandatory field names. All mandatory metadata fields are prefixed
+        /// with "rerun_" to avoid conflicts with user-defined fields.
+        </span><span class="kw">pub const </span>CATALOG_ID_FIELD_NAME: <span class="kw-2">&amp;</span>str = <span class="string">"rerun_recording_id"</span>;
+        <span class="kw">pub const </span>CATALOG_APP_ID_FIELD_NAME: <span class="kw-2">&amp;</span>str = <span class="string">"rerun_application_id"</span>;
+        <span class="kw">pub const </span>CATALOG_START_TIME_FIELD_NAME: <span class="kw-2">&amp;</span>str = <span class="string">"rerun_start_time"</span>;
+        <span class="kw">pub const </span>CATALOG_DESCRIPTION_FIELD_NAME: <span class="kw-2">&amp;</span>str = <span class="string">"rerun_description"</span>;
+        <span class="kw">pub const </span>CATALOG_RECORDING_TYPE_FIELD_NAME: <span class="kw-2">&amp;</span>str = <span class="string">"rerun_recording_type"</span>;
+        <span class="kw">pub const </span>CATALOG_STORAGE_URL_FIELD_NAME: <span class="kw-2">&amp;</span>str = <span class="string">"rerun_storage_url"</span>;
+        <span class="kw">pub const </span>CATALOG_REGISTRATION_TIME_FIELD_NAME: <span class="kw-2">&amp;</span>str = <span class="string">"rerun_registration_time"</span>;
+        <span class="kw">pub const </span>CATALOG_ROW_ID_FIELD_NAME: <span class="kw-2">&amp;</span>str = <span class="string">"rerun_row_id"</span>;
     }
 }
 

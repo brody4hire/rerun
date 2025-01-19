@@ -362,10 +362,11 @@
 <a href="#362" id="362">362</a>
 <a href="#363" id="363">363</a>
 <a href="#364" id="364">364</a>
+<a href="#365" id="365">365</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
 
-<span class="kw">use </span>arrow::array::Array <span class="kw">as _</span>;
 <span class="kw">use </span>arrow::array::ArrayRef <span class="kw">as </span>ArrowArrayRef;
+<span class="kw">use </span>arrow2::array::Array <span class="kw">as _</span>;
 
 <span class="kw">use </span>re_log_types::{TimeInt, Timeline};
 <span class="kw">use </span>re_types_core::{Component, ComponentName};
@@ -391,7 +392,7 @@
                 <span class="kw">if </span>list_array.len() &gt; row_index {
                     list_array
                         .is_valid(row_index)
-                        .then(|| <span class="prelude-val">Ok</span>(list_array.value(row_index)))
+                        .then(|| <span class="prelude-val">Ok</span>(list_array.value(row_index).into()))
                 } <span class="kw">else </span>{
                     <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="kw">crate</span>::ChunkError::IndexOutOfBounds {
                         kind: <span class="string">"row"</span>.to_owned(),
@@ -610,9 +611,9 @@
             })
             .map(|list_array| {
                 <span class="kw">let </span>array = list_array.value(<span class="number">0</span>);
-                array.nulls().map_or_else(
+                array.validity().map_or_else(
                     || array.len(),
-                    |validity| validity.len() - validity.null_count(),
+                    |validity| validity.len() - validity.unset_bits(),
                 )
             })
             .max()
@@ -631,6 +632,7 @@
         <span class="macro">debug_assert!</span>(<span class="self">self</span>.num_rows() == <span class="number">1</span>);
         <span class="self">self</span>.get_first_component(component_name)
             .and_then(|list_array| list_array.is_valid(<span class="number">0</span>).then(|| list_array.value(<span class="number">0</span>)))
+            .map(|array| array.into())
     }
 
     <span class="doccomment">/// Returns the deserialized data for the specified component.

@@ -1101,11 +1101,11 @@
 
 <span class="kw">use </span>std::ffi::{c_char, c_uchar, CString};
 
-<span class="kw">use </span>arrow::array::{ArrayRef <span class="kw">as </span>ArrowArrayRef, ListArray <span class="kw">as </span>ArrowListArray};
+<span class="kw">use </span>arrow::array::ArrayRef <span class="kw">as </span>ArrowArrayRef;
 <span class="kw">use </span>arrow_utils::arrow_array_from_c_ffi;
 <span class="kw">use </span>once_cell::sync::Lazy;
 
-<span class="kw">use </span>re_arrow_util::ArrowArrayDowncastRef <span class="kw">as _</span>;
+<span class="kw">use </span>re_arrow_util::Arrow2ArrayDowncastRef <span class="kw">as _</span>;
 <span class="kw">use </span>re_sdk::{
     external::nohash_hasher::IntMap,
     log::{Chunk, ChunkId, PendingRow, TimeColumn},
@@ -1910,7 +1910,7 @@
             <span class="kw">let </span>component_type = component_type_registry.get(<span class="kw-2">*</span>component_type)<span class="question-mark">?</span>;
             <span class="kw">let </span>datatype = component_type.datatype.clone();
             <span class="kw">let </span>values = <span class="kw">unsafe </span>{ arrow_array_from_c_ffi(array, datatype) }<span class="question-mark">?</span>;
-            components.insert(component_type.descriptor.clone(), values);
+            components.insert(component_type.descriptor.clone(), values.into());
         }
     }
 
@@ -2070,7 +2070,7 @@
         })
         .collect::&lt;<span class="prelude-ty">Result</span>&lt;<span class="kw">_</span>, CError&gt;&gt;()<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>components: IntMap&lt;ComponentDescriptor, ArrowListArray&gt; = {
+    <span class="kw">let </span>components: IntMap&lt;ComponentDescriptor, arrow2::array::ListArray&lt;i32&gt;&gt; = {
         <span class="kw">let </span>component_type_registry = COMPONENT_TYPES.read();
         component_columns
             .iter()
@@ -2086,7 +2086,7 @@
 
                 <span class="kw">let </span>component_values_untyped = <span class="kw">unsafe </span>{ arrow_array_from_c_ffi(array, datatype) }<span class="question-mark">?</span>;
                 <span class="kw">let </span>component_values = component_values_untyped
-                    .downcast_array_ref::&lt;ArrowListArray&gt;()
+                    .downcast_array2_ref::&lt;arrow2::array::ListArray&lt;i32&gt;&gt;()
                     .ok_or_else(|| {
                         CError::new(
                             CErrorCode::ArrowFfiArrayImportError,

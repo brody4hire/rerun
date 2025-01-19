@@ -1629,6 +1629,96 @@
 <a href="#1629" id="1629">1629</a>
 <a href="#1630" id="1630">1630</a>
 <a href="#1631" id="1631">1631</a>
+<a href="#1632" id="1632">1632</a>
+<a href="#1633" id="1633">1633</a>
+<a href="#1634" id="1634">1634</a>
+<a href="#1635" id="1635">1635</a>
+<a href="#1636" id="1636">1636</a>
+<a href="#1637" id="1637">1637</a>
+<a href="#1638" id="1638">1638</a>
+<a href="#1639" id="1639">1639</a>
+<a href="#1640" id="1640">1640</a>
+<a href="#1641" id="1641">1641</a>
+<a href="#1642" id="1642">1642</a>
+<a href="#1643" id="1643">1643</a>
+<a href="#1644" id="1644">1644</a>
+<a href="#1645" id="1645">1645</a>
+<a href="#1646" id="1646">1646</a>
+<a href="#1647" id="1647">1647</a>
+<a href="#1648" id="1648">1648</a>
+<a href="#1649" id="1649">1649</a>
+<a href="#1650" id="1650">1650</a>
+<a href="#1651" id="1651">1651</a>
+<a href="#1652" id="1652">1652</a>
+<a href="#1653" id="1653">1653</a>
+<a href="#1654" id="1654">1654</a>
+<a href="#1655" id="1655">1655</a>
+<a href="#1656" id="1656">1656</a>
+<a href="#1657" id="1657">1657</a>
+<a href="#1658" id="1658">1658</a>
+<a href="#1659" id="1659">1659</a>
+<a href="#1660" id="1660">1660</a>
+<a href="#1661" id="1661">1661</a>
+<a href="#1662" id="1662">1662</a>
+<a href="#1663" id="1663">1663</a>
+<a href="#1664" id="1664">1664</a>
+<a href="#1665" id="1665">1665</a>
+<a href="#1666" id="1666">1666</a>
+<a href="#1667" id="1667">1667</a>
+<a href="#1668" id="1668">1668</a>
+<a href="#1669" id="1669">1669</a>
+<a href="#1670" id="1670">1670</a>
+<a href="#1671" id="1671">1671</a>
+<a href="#1672" id="1672">1672</a>
+<a href="#1673" id="1673">1673</a>
+<a href="#1674" id="1674">1674</a>
+<a href="#1675" id="1675">1675</a>
+<a href="#1676" id="1676">1676</a>
+<a href="#1677" id="1677">1677</a>
+<a href="#1678" id="1678">1678</a>
+<a href="#1679" id="1679">1679</a>
+<a href="#1680" id="1680">1680</a>
+<a href="#1681" id="1681">1681</a>
+<a href="#1682" id="1682">1682</a>
+<a href="#1683" id="1683">1683</a>
+<a href="#1684" id="1684">1684</a>
+<a href="#1685" id="1685">1685</a>
+<a href="#1686" id="1686">1686</a>
+<a href="#1687" id="1687">1687</a>
+<a href="#1688" id="1688">1688</a>
+<a href="#1689" id="1689">1689</a>
+<a href="#1690" id="1690">1690</a>
+<a href="#1691" id="1691">1691</a>
+<a href="#1692" id="1692">1692</a>
+<a href="#1693" id="1693">1693</a>
+<a href="#1694" id="1694">1694</a>
+<a href="#1695" id="1695">1695</a>
+<a href="#1696" id="1696">1696</a>
+<a href="#1697" id="1697">1697</a>
+<a href="#1698" id="1698">1698</a>
+<a href="#1699" id="1699">1699</a>
+<a href="#1700" id="1700">1700</a>
+<a href="#1701" id="1701">1701</a>
+<a href="#1702" id="1702">1702</a>
+<a href="#1703" id="1703">1703</a>
+<a href="#1704" id="1704">1704</a>
+<a href="#1705" id="1705">1705</a>
+<a href="#1706" id="1706">1706</a>
+<a href="#1707" id="1707">1707</a>
+<a href="#1708" id="1708">1708</a>
+<a href="#1709" id="1709">1709</a>
+<a href="#1710" id="1710">1710</a>
+<a href="#1711" id="1711">1711</a>
+<a href="#1712" id="1712">1712</a>
+<a href="#1713" id="1713">1713</a>
+<a href="#1714" id="1714">1714</a>
+<a href="#1715" id="1715">1715</a>
+<a href="#1716" id="1716">1716</a>
+<a href="#1717" id="1717">1717</a>
+<a href="#1718" id="1718">1718</a>
+<a href="#1719" id="1719">1719</a>
+<a href="#1720" id="1720">1720</a>
+<a href="#1721" id="1721">1721</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::atomic::{AtomicU64, Ordering};
 
 <span class="kw">use </span>ahash::HashMap;
@@ -1639,7 +1729,11 @@
     },
     buffer::ScalarBuffer <span class="kw">as </span>ArrowScalarBuffer,
 };
-<span class="kw">use </span>itertools::{izip, Either, Itertools};
+<span class="kw">use </span>arrow2::{
+    array::{Array <span class="kw">as </span>Arrow2Array, ListArray <span class="kw">as </span>Arrow2ListArray},
+    Either,
+};
+<span class="kw">use </span>itertools::{izip, Itertools};
 <span class="kw">use </span>nohash_hasher::IntMap;
 
 <span class="kw">use </span>re_arrow_util::ArrowArrayDowncastRef <span class="kw">as _</span>;
@@ -1664,6 +1758,9 @@
     <span class="attr">#[error(transparent)]
     </span>Arrow(<span class="attr">#[from] </span>arrow::error::ArrowError),
 
+    <span class="attr">#[error(transparent)]
+    </span>Arrow2(<span class="attr">#[from] </span>arrow2::error::Error),
+
     <span class="attr">#[error(<span class="string">"{kind} index out of bounds: {index} (len={len})"</span>)]
     </span>IndexOutOfBounds {
         kind: String,
@@ -1671,10 +1768,10 @@
         index: usize,
     },
 
-    <span class="attr">#[error(<span class="string">"Serialization: {0}"</span>)]
+    <span class="attr">#[error(transparent)]
     </span>Serialization(<span class="attr">#[from] </span>SerializationError),
 
-    <span class="attr">#[error(<span class="string">"Deserialization: {0}"</span>)]
+    <span class="attr">#[error(transparent)]
     </span>Deserialization(<span class="attr">#[from] </span>DeserializationError),
 }
 
@@ -1688,7 +1785,7 @@
     //
     // NOTE: The extra `ComponentName` layer is needed because it is very common to want to look
     // for anything matching a `ComponentName`, without any further tags specified.
-    </span><span class="kw">pub </span>IntMap&lt;ComponentName, IntMap&lt;ComponentDescriptor, ArrowListArray&gt;&gt;,
+    </span><span class="kw">pub </span>IntMap&lt;ComponentName, IntMap&lt;ComponentDescriptor, Arrow2ListArray&lt;i32&gt;&gt;&gt;,
 );
 
 <span class="kw">impl </span>ChunkComponents {
@@ -1704,6 +1801,21 @@
         <span class="self">self</span>.<span class="number">0
             </span>.entry(component_desc.component_name)
             .or_default()
+            .insert(component_desc, list_array.into())
+            .map(|la| la.into())
+    }
+
+    <span class="attr">#[inline]
+    </span><span class="kw">pub fn </span>insert_descriptor_arrow2(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        component_desc: ComponentDescriptor,
+        list_array: Arrow2ListArray&lt;i32&gt;,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;Arrow2ListArray&lt;i32&gt;&gt; {
+        <span class="comment">// TODO(cmc): revert me
+        </span><span class="kw">let </span>component_desc = component_desc.untagged();
+        <span class="self">self</span>.<span class="number">0
+            </span>.entry(component_desc.component_name)
+            .or_default()
             .insert(component_desc, list_array)
     }
 
@@ -1714,7 +1826,7 @@
     </span><span class="kw">pub fn </span>get_by_component_name&lt;<span class="lifetime">'a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>,
         component_name: <span class="kw-2">&amp;</span>ComponentName,
-    ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>ArrowListArray&gt; {
+    ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Arrow2ListArray&lt;i32&gt;&gt; {
         <span class="self">self</span>.get(component_name).map_or_else(
             || itertools::Either::Left(std::iter::empty()),
             |per_desc| itertools::Either::Right(per_desc.values()),
@@ -1725,7 +1837,7 @@
     </span><span class="kw">pub fn </span>get_by_descriptor(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         component_desc: <span class="kw-2">&amp;</span>ComponentDescriptor,
-    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>ArrowListArray&gt; {
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Arrow2ListArray&lt;i32&gt;&gt; {
         <span class="self">self</span>.get(<span class="kw-2">&amp;</span>component_desc.component_name)
             .and_then(|per_desc| per_desc.get(component_desc))
     }
@@ -1734,26 +1846,28 @@
     </span><span class="kw">pub fn </span>get_by_descriptor_mut(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         component_desc: <span class="kw-2">&amp;</span>ComponentDescriptor,
-    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>ArrowListArray&gt; {
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>Arrow2ListArray&lt;i32&gt;&gt; {
         <span class="self">self</span>.get_mut(<span class="kw-2">&amp;</span>component_desc.component_name)
             .and_then(|per_desc| per_desc.get_mut(component_desc))
     }
 
     <span class="attr">#[inline]
-    </span><span class="kw">pub fn </span>iter_flattened(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = (<span class="kw-2">&amp;</span>ComponentDescriptor, <span class="kw-2">&amp;</span>ArrowListArray)&gt; {
+    </span><span class="kw">pub fn </span>iter_flattened(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+    ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = (<span class="kw-2">&amp;</span>ComponentDescriptor, <span class="kw-2">&amp;</span>Arrow2ListArray&lt;i32&gt;)&gt; {
         <span class="self">self</span>.<span class="number">0</span>.values().flatten()
     }
 
     <span class="attr">#[inline]
     </span><span class="kw">pub fn </span>into_iter_flattened(
         <span class="self">self</span>,
-    ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = (ComponentDescriptor, ArrowListArray)&gt; {
+    ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = (ComponentDescriptor, Arrow2ListArray&lt;i32&gt;)&gt; {
         <span class="self">self</span>.<span class="number">0</span>.into_values().flatten()
     }
 }
 
 <span class="kw">impl </span>std::ops::Deref <span class="kw">for </span>ChunkComponents {
-    <span class="kw">type </span>Target = IntMap&lt;ComponentName, IntMap&lt;ComponentDescriptor, ArrowListArray&gt;&gt;;
+    <span class="kw">type </span>Target = IntMap&lt;ComponentName, IntMap&lt;ComponentDescriptor, Arrow2ListArray&lt;i32&gt;&gt;&gt;;
 
     <span class="attr">#[inline]
     </span><span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::Target {
@@ -1786,6 +1900,35 @@
 </span><span class="kw">impl </span>FromIterator&lt;(ComponentName, ArrowListArray)&gt; <span class="kw">for </span>ChunkComponents {
     <span class="attr">#[inline]
     </span><span class="kw">fn </span>from_iter&lt;T: IntoIterator&lt;Item = (ComponentName, ArrowListArray)&gt;&gt;(iter: T) -&gt; <span class="self">Self </span>{
+        iter.into_iter()
+            .map(|(component_name, list_array)| {
+                <span class="kw">let </span>component_desc = ComponentDescriptor::new(component_name);
+                (component_desc, list_array)
+            })
+            .collect()
+    }
+}
+
+<span class="kw">impl </span>FromIterator&lt;(ComponentDescriptor, Arrow2ListArray&lt;i32&gt;)&gt; <span class="kw">for </span>ChunkComponents {
+    <span class="attr">#[inline]
+    </span><span class="kw">fn </span>from_iter&lt;T: IntoIterator&lt;Item = (ComponentDescriptor, Arrow2ListArray&lt;i32&gt;)&gt;&gt;(
+        iter: T,
+    ) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span><span class="kw-2">mut </span>this = <span class="self">Self</span>::default();
+        {
+            <span class="kw">for </span>(component_desc, list_array) <span class="kw">in </span>iter {
+                this.insert_descriptor_arrow2(component_desc, list_array);
+            }
+        }
+        this
+    }
+}
+
+<span class="comment">// TODO(cmc): Kinda disgusting but it makes our lives easier during the interim, as long as we're
+// in this weird halfway in-between state where we still have a bunch of things indexed by name only.
+</span><span class="kw">impl </span>FromIterator&lt;(ComponentName, Arrow2ListArray&lt;i32&gt;)&gt; <span class="kw">for </span>ChunkComponents {
+    <span class="attr">#[inline]
+    </span><span class="kw">fn </span>from_iter&lt;T: IntoIterator&lt;Item = (ComponentName, Arrow2ListArray&lt;i32&gt;)&gt;&gt;(iter: T) -&gt; <span class="self">Self </span>{
         iter.into_iter()
             .map(|(component_name, list_array)| {
                 <span class="kw">let </span>component_desc = ComponentDescriptor::new(component_name);
@@ -1867,7 +2010,10 @@
     // TODO(cmc): Kinda disgusting but it makes our lives easier during the interim, as long as we're
     // in this weird halfway in-between state where we still have a bunch of things indexed by name only.
     </span><span class="attr">#[inline]
-    </span><span class="kw">pub fn </span>get_first_component(<span class="kw-2">&amp;</span><span class="self">self</span>, component_name: <span class="kw-2">&amp;</span>ComponentName) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>ArrowListArray&gt; {
+    </span><span class="kw">pub fn </span>get_first_component(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        component_name: <span class="kw-2">&amp;</span>ComponentName,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Arrow2ListArray&lt;i32&gt;&gt; {
         <span class="self">self</span>.components
             .get(component_name)
             .and_then(|per_desc| per_desc.values().next())
@@ -1926,8 +2072,14 @@
             &amp;&amp; <span class="kw-2">*</span>components == rhs.components
     }
 
-    <span class="comment">// Only used for tests atm
-    </span><span class="kw">pub fn </span>are_equal(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
+    <span class="doccomment">/// Check for equality while ignoring possible `Extension` type information
+    ///
+    /// This is necessary because `arrow2` loses the `Extension` datatype
+    /// when deserializing back from the `arrow_schema::DataType` representation.
+    ///
+    /// In theory we could fix this, but as we're moving away from arrow2 anyways
+    /// it's unlikely worth the effort.
+    </span><span class="kw">pub fn </span>are_equal_ignoring_extension_types(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
         <span class="kw">let </span><span class="self">Self </span>{
             id,
             entity_path,
@@ -1938,22 +2090,34 @@
             components,
         } = <span class="self">self</span>;
 
-        <span class="kw">let </span>my_components: IntMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt; = components
+        <span class="kw">let </span>components_no_extension: IntMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt; = components
             .values()
             .flat_map(|per_desc| {
-                per_desc
-                    .iter()
-                    .map(|(descr, list_array)| (descr.clone(), list_array))
+                per_desc.iter().map(|(component_descr, list_array)| {
+                    <span class="kw">let </span>list_array = arrow2::array::ListArray::new(
+                        list_array.data_type().to_logical_type().clone(),
+                        list_array.offsets().clone(),
+                        list_array.values().clone(),
+                        list_array.validity().cloned(),
+                    );
+                    (component_descr.clone(), list_array)
+                })
             })
             .collect();
 
-        <span class="kw">let </span>other_components: IntMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt; = other
+        <span class="kw">let </span>other_components_no_extension: IntMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt; = other
             .components
             .values()
             .flat_map(|per_desc| {
-                per_desc
-                    .iter()
-                    .map(|(descr, list_array)| (descr.clone(), list_array))
+                per_desc.iter().map(|(component_descr, list_array)| {
+                    <span class="kw">let </span>list_array = arrow2::array::ListArray::new(
+                        list_array.data_type().to_logical_type().clone(),
+                        list_array.offsets().clone(),
+                        list_array.values().clone(),
+                        list_array.validity().cloned(),
+                    );
+                    (component_descr.clone(), list_array)
+                })
             })
             .collect();
 
@@ -1962,7 +2126,7 @@
             &amp;&amp; <span class="kw-2">*</span>is_sorted == other.is_sorted
             &amp;&amp; row_ids == <span class="kw-2">&amp;</span>other.row_ids
             &amp;&amp; <span class="kw-2">*</span>timelines == other.timelines
-            &amp;&amp; my_components == other_components
+            &amp;&amp; components_no_extension == other_components_no_extension
     }
 }
 
@@ -2104,9 +2268,9 @@
             .values()
             .flat_map(|per_desc| per_desc.values())
             .map(|list_array| {
-                list_array.nulls().map_or_else(
+                list_array.validity().map_or_else(
                     || list_array.len() <span class="kw">as </span>u64,
-                    |validity| validity.len() <span class="kw">as </span>u64 - validity.null_count() <span class="kw">as </span>u64,
+                    |validity| validity.len() <span class="kw">as </span>u64 - validity.unset_bits() <span class="kw">as </span>u64,
                 )
             })
             .sum()
@@ -2170,7 +2334,7 @@
                 .values()
                 .flat_map(|per_desc| per_desc.values())
                 .for_each(|list_array| {
-                    <span class="kw">if let </span><span class="prelude-val">Some</span>(validity) = list_array.nulls() {
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(validity) = list_array.validity() {
                         validity
                             .iter()
                             .enumerate()
@@ -2219,7 +2383,7 @@
             .values()
             .flat_map(|per_desc| per_desc.values())
             .fold(HashMap::default(), |acc, list_array| {
-                <span class="kw">if let </span><span class="prelude-val">Some</span>(validity) = list_array.nulls() {
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(validity) = list_array.validity() {
                     time_column.times().zip(validity.iter()).fold(
                         acc,
                         |<span class="kw-2">mut </span>acc, (time, is_valid)| {
@@ -2249,9 +2413,9 @@
     </span><span class="kw">pub fn </span>num_events_for_component(<span class="kw-2">&amp;</span><span class="self">self</span>, component_name: ComponentName) -&gt; <span class="prelude-ty">Option</span>&lt;u64&gt; {
         <span class="comment">// Reminder: component columns are sparse, we must check validity bitmap.
         </span><span class="self">self</span>.get_first_component(<span class="kw-2">&amp;</span>component_name).map(|list_array| {
-            list_array.nulls().map_or_else(
+            list_array.validity().map_or_else(
                 || list_array.len() <span class="kw">as </span>u64,
-                |validity| validity.len() <span class="kw">as </span>u64 - validity.null_count() <span class="kw">as </span>u64,
+                |validity| validity.len() <span class="kw">as </span>u64 - validity.unset_bits() <span class="kw">as </span>u64,
             )
         })
     }
@@ -2526,6 +2690,22 @@
     ) -&gt; ChunkResult&lt;()&gt; {
         <span class="self">self</span>.components
             .insert_descriptor(component_desc, list_array);
+        <span class="self">self</span>.sanity_check()
+    }
+
+    <span class="doccomment">/// Unconditionally inserts an [`Arrow2ListArray`] as a component column.
+    ///
+    /// Removes and replaces the column if it already exists.
+    ///
+    /// This will fail if the end result is malformed in any way -- see [`Self::sanity_check`].
+    </span><span class="attr">#[inline]
+    </span><span class="kw">pub fn </span>add_component_arrow2(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        component_desc: ComponentDescriptor,
+        list_array: Arrow2ListArray&lt;i32&gt;,
+    ) -&gt; ChunkResult&lt;()&gt; {
+        <span class="self">self</span>.components
+            .insert_descriptor_arrow2(component_desc, list_array);
         <span class="self">self</span>.sanity_check()
     }
 
@@ -2809,11 +2989,11 @@
 
         <span class="kw">let </span>row_ids = <span class="self">self</span>.row_ids();
 
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(validity) = list_array.nulls() {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(validity) = list_array.validity() {
             Either::Right(Either::Left(
                 row_ids
                     .enumerate()
-                    .filter_map(|(i, o)| validity.is_valid(i).then_some(o)),
+                    .filter_map(|(i, o)| validity.get_bit(i).then_some(o)),
             ))
         } <span class="kw">else </span>{
             Either::Right(Either::Right(row_ids))
@@ -2986,21 +3166,21 @@
                     per_desc
                         .iter()
                         .filter_map(|(component_desc, list_array)| {
-                            <span class="kw">if let </span><span class="prelude-val">Some</span>(validity) = list_array.nulls() {
+                            <span class="kw">if let </span><span class="prelude-val">Some</span>(validity) = list_array.validity() {
                                 <span class="comment">// Potentially sparse
 
                                 </span><span class="kw">if </span>validity.is_empty() {
                                     <span class="kw">return </span><span class="prelude-val">None</span>;
                                 }
 
-                                <span class="kw">let </span>is_dense = validity.null_count() == <span class="number">0</span>;
+                                <span class="kw">let </span>is_dense = validity.unset_bits() == <span class="number">0</span>;
                                 <span class="kw">if </span>is_dense {
                                     <span class="kw">return </span><span class="prelude-val">Some</span>((component_desc.clone(), <span class="self">self</span>.time_range));
                                 }
 
                                 <span class="kw">let </span><span class="kw-2">mut </span>time_min = TimeInt::MAX;
                                 <span class="kw">for </span>(i, time) <span class="kw">in </span>times.iter().copied().enumerate() {
-                                    <span class="kw">if </span>validity.is_valid(i) {
+                                    <span class="kw">if </span>validity.get(i).unwrap_or(<span class="bool-val">false</span>) {
                                         time_min = TimeInt::new_temporal(time);
                                         <span class="kw">break</span>;
                                     }
@@ -3008,7 +3188,7 @@
 
                                 <span class="kw">let </span><span class="kw-2">mut </span>time_max = TimeInt::MIN;
                                 <span class="kw">for </span>(i, time) <span class="kw">in </span>times.iter().copied().enumerate().rev() {
-                                    <span class="kw">if </span>validity.is_valid(i) {
+                                    <span class="kw">if </span>validity.get(i).unwrap_or(<span class="bool-val">false</span>) {
                                         time_max = TimeInt::new_temporal(time);
                                         <span class="kw">break</span>;
                                     }
@@ -3154,7 +3334,7 @@
         <span class="comment">// Components
         </span><span class="kw">for </span>(_component_name, per_desc) <span class="kw">in </span>components.iter() {
             <span class="kw">for </span>(component_desc, list_array) <span class="kw">in </span>per_desc {
-                <span class="kw">if </span>!<span class="macro">matches!</span>(list_array.data_type(), arrow::datatypes::DataType::List(<span class="kw">_</span>)) {
+                <span class="kw">if </span>!<span class="macro">matches!</span>(list_array.data_type(), arrow2::datatypes::DataType::List(<span class="kw">_</span>)) {
                     <span class="kw">return </span><span class="prelude-val">Err</span>(ChunkError::Malformed {
                         reason: <span class="macro">format!</span>(
                             <span class="string">"The outer array in a chunked component batch must be a sparse list, got {:?}"</span>,
@@ -3162,8 +3342,8 @@
                         ),
                     });
                 }
-                <span class="kw">if let </span>arrow::datatypes::DataType::List(field) = list_array.data_type() {
-                    <span class="kw">if </span>!field.is_nullable() {
+                <span class="kw">if let </span>arrow2::datatypes::DataType::List(field) = list_array.data_type() {
+                    <span class="kw">if </span>!field.is_nullable {
                         <span class="kw">return </span><span class="prelude-val">Err</span>(ChunkError::Malformed {
                             reason: <span class="macro">format!</span>(
                                 <span class="string">"The outer array in chunked component batch must be a sparse list, got {:?}"</span>,
@@ -3183,7 +3363,7 @@
                 }
 
                 <span class="kw">let </span>validity_is_empty = list_array
-                    .nulls()
+                    .validity()
                     .is_some_and(|validity| validity.is_empty());
                 <span class="kw">if </span>!<span class="self">self</span>.is_empty() &amp;&amp; validity_is_empty {
                     <span class="kw">return </span><span class="prelude-val">Err</span>(ChunkError::Malformed {

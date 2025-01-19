@@ -2506,7 +2506,7 @@
             <span class="macro">re_tracing::profile_scope!</span>(<span class="string">"iterate per timeline set"</span>);
 
             <span class="comment">// Then we split the micro batches even further -- one sub-batch per unique set of datatypes.
-            </span><span class="kw">let </span><span class="kw-2">mut </span>per_datatype_set: IntMap&lt;u64 <span class="comment">/* ArrowDatatype set */</span>, Vec&lt;<span class="self">Self</span>&gt;&gt; =
+            </span><span class="kw">let </span><span class="kw-2">mut </span>per_datatype_set: IntMap&lt;u64 <span class="comment">/* Arrow2Datatype set */</span>, Vec&lt;<span class="self">Self</span>&gt;&gt; =
                 Default::default();
             {
                 <span class="macro">re_tracing::profile_scope!</span>(<span class="string">"compute datatype sets"</span>);

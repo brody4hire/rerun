@@ -41,6 +41,8 @@
 <a href="#41" id="41">41</a>
 <a href="#42" id="42">42</a>
 <a href="#43" id="43">43</a>
+<a href="#44" id="44">44</a>
+<a href="#45" id="45">45</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::components::MediaType;
 
 <span class="kw">use </span><span class="kw">super</span>::TextDocument;
@@ -68,11 +70,13 @@
         contents: Vec&lt;u8&gt;,
         media_type: <span class="prelude-ty">Option</span>&lt;<span class="kw">impl </span>Into&lt;MediaType&gt;&gt;,
     ) -&gt; anyhow::Result&lt;<span class="self">Self</span>&gt; {
-        <span class="kw">let </span>media_type = media_type.map(Into::into);
-        <span class="kw">let </span>media_type = MediaType::or_guess_from_data(media_type, <span class="kw-2">&amp;</span>contents);
-        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
-            text: String::from_utf8(contents)<span class="question-mark">?</span>.into(),
-            media_type,
+        <span class="kw">let </span>media_type = MediaType::or_guess_from_data(media_type.map(Into::into), <span class="kw-2">&amp;</span>contents);
+        <span class="kw">let </span>result = <span class="self">Self</span>::new(String::from_utf8(contents)<span class="question-mark">?</span>);
+
+        <span class="prelude-val">Ok</span>(<span class="kw">if let </span><span class="prelude-val">Some</span>(media_type) = media_type {
+            result.with_media_type(media_type)
+        } <span class="kw">else </span>{
+            result
         })
     }
 

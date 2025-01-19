@@ -974,48 +974,23 @@
 <a href="#974" id="974">974</a>
 <a href="#975" id="975">975</a>
 <a href="#976" id="976">976</a>
-<a href="#977" id="977">977</a>
-<a href="#978" id="978">978</a>
-<a href="#979" id="979">979</a>
-<a href="#980" id="980">980</a>
-<a href="#981" id="981">981</a>
-<a href="#982" id="982">982</a>
-<a href="#983" id="983">983</a>
-<a href="#984" id="984">984</a>
-<a href="#985" id="985">985</a>
-<a href="#986" id="986">986</a>
-<a href="#987" id="987">987</a>
-<a href="#988" id="988">988</a>
-<a href="#989" id="989">989</a>
-<a href="#990" id="990">990</a>
-<a href="#991" id="991">991</a>
-<a href="#992" id="992">992</a>
-<a href="#993" id="993">993</a>
-<a href="#994" id="994">994</a>
-<a href="#995" id="995">995</a>
-<a href="#996" id="996">996</a>
-<a href="#997" id="997">997</a>
-<a href="#998" id="998">998</a>
-<a href="#999" id="999">999</a>
-<a href="#1000" id="1000">1000</a>
-<a href="#1001" id="1001">1001</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
 
-<span class="kw">use </span>arrow::{
+<span class="kw">use </span>arrow2::{
     array::{
-        Array <span class="kw">as </span>ArrowArray, ArrowPrimitiveType, BooleanArray <span class="kw">as </span>ArrowBooleanArray,
-        FixedSizeListArray <span class="kw">as </span>ArrowFixedSizeListArray, ListArray <span class="kw">as </span>ArrowListArray,
-        PrimitiveArray <span class="kw">as </span>ArrowPrimitiveArray, StringArray <span class="kw">as </span>ArrowStringArray,
-        StructArray <span class="kw">as </span>ArrowStructArray,
+        Array <span class="kw">as </span>Arrow2Array, BooleanArray <span class="kw">as </span>Arrow2BooleanArray,
+        FixedSizeListArray <span class="kw">as </span>Arrow2FixedSizeListArray, ListArray <span class="kw">as </span>Arrow2ListArray,
+        PrimitiveArray <span class="kw">as </span>Arrow2PrimitiveArray, StructArray <span class="kw">as </span>Arrow2StructArray,
+        Utf8Array <span class="kw">as </span>Arrow2Utf8Array,
     },
-    buffer::{BooleanBuffer <span class="kw">as </span>ArrowBooleanBuffer, ScalarBuffer <span class="kw">as </span>ArrowScalarBuffer},
-    datatypes::ArrowNativeType,
+    bitmap::Bitmap <span class="kw">as </span>Arrow2Bitmap,
+    Either,
 };
-<span class="kw">use </span>itertools::{izip, Either, Itertools};
+<span class="kw">use </span>itertools::{izip, Itertools};
 
-<span class="kw">use </span>re_arrow_util::{arrow_util::offsets_lengths, ArrowArrayDowncastRef <span class="kw">as _</span>};
+<span class="kw">use </span>re_arrow_util::Arrow2ArrayDowncastRef <span class="kw">as _</span>;
 <span class="kw">use </span>re_log_types::{TimeInt, TimePoint, Timeline};
-<span class="kw">use </span>re_types_core::{ArrowString, Component, ComponentName};
+<span class="kw">use </span>re_types_core::{ArrowBuffer, ArrowString, Component, ComponentName};
 
 <span class="kw">use crate</span>::{Chunk, RowId, TimeColumn};
 
@@ -1073,11 +1048,11 @@
         <span class="kw">if </span><span class="self">self</span>.is_static() {
             <span class="kw">let </span>indices = <span class="macro">izip!</span>(std::iter::repeat(TimeInt::STATIC), <span class="self">self</span>.row_ids());
 
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(validity) = list_array.nulls() {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(validity) = list_array.validity() {
                 Either::Right(Either::Left(Either::Left(
                     indices
                         .enumerate()
-                        .filter_map(|(i, o)| validity.is_valid(i).then_some(o)),
+                        .filter_map(|(i, o)| validity.get_bit(i).then_some(o)),
                 )))
             } <span class="kw">else </span>{
                 Either::Right(Either::Left(Either::Right(indices)))
@@ -1089,11 +1064,11 @@
 
             <span class="kw">let </span>indices = <span class="macro">izip!</span>(time_column.times(), <span class="self">self</span>.row_ids());
 
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(validity) = list_array.nulls() {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(validity) = list_array.validity() {
                 Either::Right(Either::Right(Either::Left(
                     indices
                         .enumerate()
-                        .filter_map(|(i, o)| validity.is_valid(i).then_some(o)),
+                        .filter_map(|(i, o)| validity.get_bit(i).then_some(o)),
                 )))
             } <span class="kw">else </span>{
                 Either::Right(Either::Right(Either::Right(indices)))
@@ -1136,7 +1111,7 @@
             <span class="kw">return </span>Either::Left(std::iter::empty());
         };
 
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(validity) = list_array.nulls() {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(validity) = list_array.validity() {
             <span class="kw">let </span><span class="kw-2">mut </span>timelines = <span class="self">self
                 </span>.timelines
                 .values()
@@ -1146,7 +1121,7 @@
                         time_column
                             .times()
                             .enumerate()
-                            .filter(|(i, <span class="kw">_</span>)| validity.is_valid(<span class="kw-2">*</span>i))
+                            .filter(|(i, <span class="kw">_</span>)| validity.get_bit(<span class="kw-2">*</span>i))
                             .map(|(<span class="kw">_</span>, time)| time),
                     )
                 })
@@ -1190,13 +1165,13 @@
         };
 
         <span class="kw">let </span>offsets = list_array.offsets().iter().map(|idx| <span class="kw-2">*</span>idx <span class="kw">as </span>usize);
-        <span class="kw">let </span>lengths = offsets_lengths(list_array.offsets());
+        <span class="kw">let </span>lengths = list_array.offsets().lengths();
 
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(validity) = list_array.nulls() {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(validity) = list_array.validity() {
             Either::Right(Either::Left(
                 <span class="macro">izip!</span>(offsets, lengths)
                     .enumerate()
-                    .filter_map(|(i, o)| validity.is_valid(i).then_some(o)),
+                    .filter_map(|(i, o)| validity.get_bit(i).then_some(o)),
             ))
         } <span class="kw">else </span>{
             Either::Right(Either::Right(<span class="macro">izip!</span>(offsets, lengths)))
@@ -1250,7 +1225,9 @@
             <span class="kw">return </span>Either::Left(std::iter::empty());
         };
 
-        <span class="kw">let </span><span class="prelude-val">Some</span>(struct_array) = list_array.values().downcast_array_ref::&lt;ArrowStructArray&gt;()
+        <span class="kw">let </span><span class="prelude-val">Some</span>(struct_array) = list_array
+            .values()
+            .downcast_array2_ref::&lt;Arrow2StructArray&gt;()
         <span class="kw">else </span>{
             <span class="kw">if </span><span class="macro">cfg!</span>(debug_assertions) {
                 <span class="macro">panic!</span>(<span class="string">"downcast failed for {component_name}, data discarded"</span>);
@@ -1264,7 +1241,7 @@
             .fields()
             .iter()
             .enumerate()
-            .find_map(|(i, field)| (field.name() == field_name).then_some(i))
+            .find_map(|(i, field)| (field.name == field_name).then_some(i))
         <span class="kw">else </span>{
             <span class="kw">if </span><span class="macro">cfg!</span>(debug_assertions) {
                 <span class="macro">panic!</span>(<span class="string">"field {field_name} not found for {component_name}, data discarded"</span>);
@@ -1276,20 +1253,20 @@
             <span class="kw">return </span>Either::Left(std::iter::empty());
         };
 
-        <span class="kw">if </span>field_idx &gt;= struct_array.num_columns() {
+        <span class="kw">let </span><span class="prelude-val">Some</span>(array) = struct_array.values().get(field_idx) <span class="kw">else </span>{
             <span class="kw">if </span><span class="macro">cfg!</span>(debug_assertions) {
                 <span class="macro">panic!</span>(<span class="string">"field {field_name} not found for {component_name}, data discarded"</span>);
             } <span class="kw">else </span>{
                 <span class="macro">re_log::error_once!</span>(
                     <span class="string">"field {field_name} not found for {component_name}, data discarded"
                 </span>);
-                <span class="kw">return </span>Either::Left(std::iter::empty());
             }
-        }
+            <span class="kw">return </span>Either::Left(std::iter::empty());
+        };
 
         Either::Right(S::slice(
             component_name,
-            struct_array.column(field_idx),
+            <span class="kw-2">&amp;**</span>array,
             <span class="self">self</span>.iter_component_offsets(<span class="kw-2">&amp;</span>component_name),
         ))
     }
@@ -1305,22 +1282,18 @@
 
     <span class="kw">fn </span>slice&lt;<span class="lifetime">'a</span>&gt;(
         component_name: ComponentName,
-        array: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw">dyn </span>ArrowArray,
+        array: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw">dyn </span>Arrow2Array,
         component_offsets: <span class="kw">impl </span>Iterator&lt;Item = (usize, usize)&gt; + <span class="lifetime">'a</span>,
     ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="self">Self</span>::Item&lt;<span class="lifetime">'a</span>&gt;&gt; + <span class="lifetime">'a</span>;
 }
 
 <span class="doccomment">/// The actual implementation of `impl_native_type!`, so that we don't have to work in a macro.
-</span><span class="kw">fn </span>slice_as_native&lt;<span class="lifetime">'a</span>, P, T&gt;(
+</span><span class="kw">fn </span>slice_as_native&lt;<span class="lifetime">'a</span>, T: arrow2::types::NativeType + arrow::datatypes::ArrowNativeType&gt;(
     component_name: ComponentName,
-    array: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw">dyn </span>ArrowArray,
+    array: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw">dyn </span>Arrow2Array,
     component_offsets: <span class="kw">impl </span>Iterator&lt;Item = (usize, usize)&gt; + <span class="lifetime">'a</span>,
-) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[T]&gt; + <span class="lifetime">'a
-</span><span class="kw">where
-    </span>P: ArrowPrimitiveType&lt;Native = T&gt;,
-    T: ArrowNativeType,
-{
-    <span class="kw">let </span><span class="prelude-val">Some</span>(values) = array.downcast_array_ref::&lt;ArrowPrimitiveArray&lt;P&gt;&gt;() <span class="kw">else </span>{
+) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[T]&gt; + <span class="lifetime">'a </span>{
+    <span class="kw">let </span><span class="prelude-val">Some</span>(values) = array.downcast_array2_ref::&lt;Arrow2PrimitiveArray&lt;T&gt;&gt;() <span class="kw">else </span>{
         <span class="kw">if </span><span class="macro">cfg!</span>(debug_assertions) {
             <span class="macro">panic!</span>(<span class="string">"downcast failed for {component_name}, data discarded"</span>);
         } <span class="kw">else </span>{
@@ -1328,7 +1301,7 @@
         }
         <span class="kw">return </span>Either::Left(std::iter::empty());
     };
-    <span class="kw">let </span>values = values.values().as_ref();
+    <span class="kw">let </span>values = values.values().as_slice();
 
     <span class="comment">// NOTE: No need for validity checks here, `iter_offsets` already takes care of that.
     </span>Either::Right(component_offsets.map(<span class="kw">move </span>|(idx, len)| <span class="kw-2">&amp;</span>values[idx..idx + len]))
@@ -1336,51 +1309,48 @@
 
 <span class="comment">// We use a macro instead of a blanket impl because this violates orphan rules.
 </span><span class="macro">macro_rules!</span> impl_native_type {
-    (<span class="macro-nonterminal">$arrow_primitive_type</span>:ty, <span class="macro-nonterminal">$native_type</span>:ty) =&gt; {
-        <span class="kw">impl </span>ChunkComponentSlicer <span class="kw">for </span><span class="macro-nonterminal">$native_type </span>{
-            <span class="kw">type </span>Item&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[<span class="macro-nonterminal">$native_type</span>];
+    (<span class="macro-nonterminal">$</span><span class="kw">type</span>:<span class="macro-nonterminal">ty</span>) =&gt; {
+        <span class="kw">impl </span>ChunkComponentSlicer <span class="kw">for </span><span class="macro-nonterminal">$</span><span class="kw">type </span>{
+            <span class="kw">type </span><span class="macro-nonterminal">Item</span>&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[<span class="macro-nonterminal">$</span><span class="kw">type</span>];
 
-            <span class="kw">fn </span>slice&lt;<span class="lifetime">'a</span>&gt;(
+            <span class="kw">fn </span><span class="macro-nonterminal">slice</span>&lt;<span class="lifetime">'a</span>&gt;(
                 component_name: ComponentName,
-                array: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw">dyn </span>ArrowArray,
+                array: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw">dyn </span>Arrow2Array,
                 component_offsets: <span class="kw">impl </span>Iterator&lt;Item = (usize, usize)&gt; + <span class="lifetime">'a</span>,
             ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="self">Self</span>::Item&lt;<span class="lifetime">'a</span>&gt;&gt; + <span class="lifetime">'a </span>{
-                slice_as_native::&lt;<span class="macro-nonterminal">$arrow_primitive_type</span>, <span class="macro-nonterminal">$native_type</span>&gt;(
-                    component_name,
-                    array,
-                    component_offsets,
-                )
+                slice_as_native(component_name, array, component_offsets)
             }
         }
     };
 }
 
-<span class="macro">impl_native_type!</span>(arrow::array::types::UInt8Type, u8);
-<span class="macro">impl_native_type!</span>(arrow::array::types::UInt16Type, u16);
-<span class="macro">impl_native_type!</span>(arrow::array::types::UInt32Type, u32);
-<span class="macro">impl_native_type!</span>(arrow::array::types::UInt64Type, u64);
-<span class="comment">// impl_native_type!(arrow::array::types::UInt128Type, u128);
-</span><span class="macro">impl_native_type!</span>(arrow::array::types::Int8Type, i8);
-<span class="macro">impl_native_type!</span>(arrow::array::types::Int16Type, i16);
-<span class="macro">impl_native_type!</span>(arrow::array::types::Int32Type, i32);
-<span class="macro">impl_native_type!</span>(arrow::array::types::Int64Type, i64);
-<span class="comment">// impl_native_type!(arrow::array::types::Int128Type, i128);
-</span><span class="macro">impl_native_type!</span>(arrow::array::types::Float16Type, half::f16);
-<span class="macro">impl_native_type!</span>(arrow::array::types::Float32Type, f32);
-<span class="macro">impl_native_type!</span>(arrow::array::types::Float64Type, f64);
+<span class="macro">impl_native_type!</span>(u8);
+<span class="macro">impl_native_type!</span>(u16);
+<span class="macro">impl_native_type!</span>(u32);
+<span class="macro">impl_native_type!</span>(u64);
+<span class="macro">impl_native_type!</span>(i8);
+<span class="macro">impl_native_type!</span>(i16);
+<span class="macro">impl_native_type!</span>(i32);
+<span class="macro">impl_native_type!</span>(i64);
+<span class="macro">impl_native_type!</span>(f32);
+<span class="macro">impl_native_type!</span>(f64);
+<span class="macro">impl_native_type!</span>(i128);
 
 <span class="doccomment">/// The actual implementation of `impl_array_native_type!`, so that we don't have to work in a macro.
-</span><span class="kw">fn </span>slice_as_array_native&lt;<span class="lifetime">'a</span>, <span class="kw">const </span>N: usize, P, T&gt;(
+</span><span class="kw">fn </span>slice_as_array_native&lt;
+    <span class="lifetime">'a</span>,
+    <span class="kw">const </span>N: usize,
+    T: arrow2::types::NativeType + arrow::datatypes::ArrowNativeType,
+&gt;(
     component_name: ComponentName,
-    array: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw">dyn </span>ArrowArray,
+    array: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw">dyn </span>Arrow2Array,
     component_offsets: <span class="kw">impl </span>Iterator&lt;Item = (usize, usize)&gt; + <span class="lifetime">'a</span>,
 ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[[T; N]]&gt; + <span class="lifetime">'a
 </span><span class="kw">where
     </span>[T; N]: bytemuck::Pod,
-    P: ArrowPrimitiveType&lt;Native = T&gt;,
-    T: ArrowNativeType + bytemuck::Pod,
 {
-    <span class="kw">let </span><span class="prelude-val">Some</span>(fixed_size_list_array) = array.downcast_array_ref::&lt;ArrowFixedSizeListArray&gt;() <span class="kw">else </span>{
+    <span class="kw">let </span><span class="prelude-val">Some</span>(fixed_size_list_array) = array.downcast_array2_ref::&lt;Arrow2FixedSizeListArray&gt;()
+    <span class="kw">else </span>{
         <span class="kw">if </span><span class="macro">cfg!</span>(debug_assertions) {
             <span class="macro">panic!</span>(<span class="string">"downcast failed for {component_name}, data discarded"</span>);
         } <span class="kw">else </span>{
@@ -1391,7 +1361,7 @@
 
     <span class="kw">let </span><span class="prelude-val">Some</span>(values) = fixed_size_list_array
         .values()
-        .downcast_array_ref::&lt;ArrowPrimitiveArray&lt;P&gt;&gt;()
+        .downcast_array2_ref::&lt;Arrow2PrimitiveArray&lt;T&gt;&gt;()
     <span class="kw">else </span>{
         <span class="kw">if </span><span class="macro">cfg!</span>(debug_assertions) {
             <span class="macro">panic!</span>(<span class="string">"downcast failed for {component_name}, data discarded"</span>);
@@ -1401,8 +1371,8 @@
         <span class="kw">return </span>Either::Left(std::iter::empty());
     };
 
-    <span class="kw">let </span>size = fixed_size_list_array.value_length() <span class="kw">as </span>usize;
-    <span class="kw">let </span>values = values.values().as_ref();
+    <span class="kw">let </span>size = fixed_size_list_array.size();
+    <span class="kw">let </span>values = values.values().as_slice();
 
     <span class="comment">// NOTE: No need for validity checks here, `component_offsets` already takes care of that.
     </span>Either::Right(
@@ -1414,53 +1384,43 @@
 
 <span class="comment">// We use a macro instead of a blanket impl because this violates orphan rules.
 </span><span class="macro">macro_rules!</span> impl_array_native_type {
-    (<span class="macro-nonterminal">$arrow_primitive_type</span>:ty, <span class="macro-nonterminal">$native_type</span>:ty) =&gt; {
-        <span class="kw">impl</span>&lt;<span class="kw">const </span>N: usize&gt; ChunkComponentSlicer <span class="kw">for </span>[<span class="macro-nonterminal">$native_type</span>; N]
+    (<span class="macro-nonterminal">$</span><span class="kw">type</span>:<span class="macro-nonterminal">ty</span>) =&gt; {
+        <span class="kw">impl</span>&lt;<span class="kw">const </span>N: usize&gt; ChunkComponentSlicer <span class="kw">for </span>[<span class="macro-nonterminal">$</span><span class="kw">type</span>; <span class="macro-nonterminal">N</span>]
         <span class="kw">where
-            </span>[<span class="macro-nonterminal">$native_type</span>; N]: bytemuck::Pod,
+            </span>[<span class="macro-nonterminal">$</span><span class="kw">type</span>; <span class="macro-nonterminal">N</span>]: bytemuck::Pod,
         {
-            <span class="kw">type </span>Item&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[[<span class="macro-nonterminal">$native_type</span>; N]];
+            <span class="kw">type </span>Item&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[[<span class="macro-nonterminal">$</span><span class="kw">type</span>; <span class="macro-nonterminal">N</span>]];
 
             <span class="kw">fn </span>slice&lt;<span class="lifetime">'a</span>&gt;(
                 component_name: ComponentName,
-                array: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw">dyn </span>ArrowArray,
+                array: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw">dyn </span>Arrow2Array,
                 component_offsets: <span class="kw">impl </span>Iterator&lt;Item = (usize, usize)&gt; + <span class="lifetime">'a</span>,
             ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="self">Self</span>::Item&lt;<span class="lifetime">'a</span>&gt;&gt; + <span class="lifetime">'a </span>{
-                slice_as_array_native::&lt;N, <span class="macro-nonterminal">$arrow_primitive_type</span>, <span class="macro-nonterminal">$native_type</span>&gt;(
-                    component_name,
-                    array,
-                    component_offsets,
-                )
+                slice_as_array_native(component_name, array, component_offsets)
             }
         }
     };
 }
 
-<span class="macro">impl_array_native_type!</span>(arrow::array::types::UInt8Type, u8);
-<span class="macro">impl_array_native_type!</span>(arrow::array::types::UInt16Type, u16);
-<span class="macro">impl_array_native_type!</span>(arrow::array::types::UInt32Type, u32);
-<span class="macro">impl_array_native_type!</span>(arrow::array::types::UInt64Type, u64);
-<span class="comment">// impl_array_native_type!(arrow::array::types::UInt128Type, u128);
-</span><span class="macro">impl_array_native_type!</span>(arrow::array::types::Int8Type, i8);
-<span class="macro">impl_array_native_type!</span>(arrow::array::types::Int16Type, i16);
-<span class="macro">impl_array_native_type!</span>(arrow::array::types::Int32Type, i32);
-<span class="macro">impl_array_native_type!</span>(arrow::array::types::Int64Type, i64);
-<span class="comment">// impl_array_native_type!(arrow::array::types::Int128Type, i128);
-</span><span class="macro">impl_array_native_type!</span>(arrow::array::types::Float16Type, half::f16);
-<span class="macro">impl_array_native_type!</span>(arrow::array::types::Float32Type, f32);
-<span class="macro">impl_array_native_type!</span>(arrow::array::types::Float64Type, f64);
+<span class="macro">impl_array_native_type!</span>(u8);
+<span class="macro">impl_array_native_type!</span>(u16);
+<span class="macro">impl_array_native_type!</span>(u32);
+<span class="macro">impl_array_native_type!</span>(u64);
+<span class="macro">impl_array_native_type!</span>(i8);
+<span class="macro">impl_array_native_type!</span>(i16);
+<span class="macro">impl_array_native_type!</span>(i32);
+<span class="macro">impl_array_native_type!</span>(i64);
+<span class="macro">impl_array_native_type!</span>(f32);
+<span class="macro">impl_array_native_type!</span>(f64);
+<span class="macro">impl_array_native_type!</span>(i128);
 
 <span class="doccomment">/// The actual implementation of `impl_buffer_native_type!`, so that we don't have to work in a macro.
-</span><span class="kw">fn </span>slice_as_buffer_native&lt;<span class="lifetime">'a</span>, P, T&gt;(
+</span><span class="kw">fn </span>slice_as_buffer_native&lt;<span class="lifetime">'a</span>, T: arrow2::types::NativeType + arrow::datatypes::ArrowNativeType&gt;(
     component_name: ComponentName,
-    array: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw">dyn </span>ArrowArray,
+    array: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw">dyn </span>Arrow2Array,
     component_offsets: <span class="kw">impl </span>Iterator&lt;Item = (usize, usize)&gt; + <span class="lifetime">'a</span>,
-) -&gt; <span class="kw">impl </span>Iterator&lt;Item = Vec&lt;ArrowScalarBuffer&lt;T&gt;&gt;&gt; + <span class="lifetime">'a
-</span><span class="kw">where
-    </span>P: ArrowPrimitiveType&lt;Native = T&gt;,
-    T: ArrowNativeType,
-{
-    <span class="kw">let </span><span class="prelude-val">Some</span>(inner_list_array) = array.downcast_array_ref::&lt;ArrowListArray&gt;() <span class="kw">else </span>{
+) -&gt; <span class="kw">impl </span>Iterator&lt;Item = Vec&lt;ArrowBuffer&lt;T&gt;&gt;&gt; + <span class="lifetime">'a </span>{
+    <span class="kw">let </span><span class="prelude-val">Some</span>(inner_list_array) = array.downcast_array2_ref::&lt;Arrow2ListArray&lt;i32&gt;&gt;() <span class="kw">else </span>{
         <span class="kw">if </span><span class="macro">cfg!</span>(debug_assertions) {
             <span class="macro">panic!</span>(<span class="string">"downcast failed for {component_name}, data discarded"</span>);
         } <span class="kw">else </span>{
@@ -1471,7 +1431,7 @@
 
     <span class="kw">let </span><span class="prelude-val">Some</span>(values) = inner_list_array
         .values()
-        .downcast_array_ref::&lt;ArrowPrimitiveArray&lt;P&gt;&gt;()
+        .downcast_array2_ref::&lt;Arrow2PrimitiveArray&lt;T&gt;&gt;()
     <span class="kw">else </span>{
         <span class="kw">if </span><span class="macro">cfg!</span>(debug_assertions) {
             <span class="macro">panic!</span>(<span class="string">"downcast failed for {component_name}, data discarded"</span>);
@@ -1483,66 +1443,62 @@
 
     <span class="kw">let </span>values = values.values();
     <span class="kw">let </span>offsets = inner_list_array.offsets();
-    <span class="kw">let </span>lengths = offsets_lengths(inner_list_array.offsets()).collect_vec();
+    <span class="kw">let </span>lengths = inner_list_array.offsets().lengths().collect_vec();
 
     <span class="comment">// NOTE: No need for validity checks here, `component_offsets` already takes care of that.
     </span>Either::Right(component_offsets.map(<span class="kw">move </span>|(idx, len)| {
-        <span class="kw">let </span>offsets = <span class="kw-2">&amp;</span>offsets[idx..idx + len];
-        <span class="kw">let </span>lengths = <span class="kw-2">&amp;</span>lengths[idx..idx + len];
+        <span class="kw">let </span>offsets = <span class="kw-2">&amp;</span>offsets.as_slice()[idx..idx + len];
+        <span class="kw">let </span>lengths = <span class="kw-2">&amp;</span>lengths.as_slice()[idx..idx + len];
         <span class="macro">izip!</span>(offsets, lengths)
             <span class="comment">// NOTE: Not an actual clone, just a refbump of the underlying buffer.
-            </span>.map(|(<span class="kw-2">&amp;</span>idx, <span class="kw-2">&amp;</span>len)| values.clone().slice(idx <span class="kw">as _</span>, len))
+            </span>.map(|(<span class="kw-2">&amp;</span>idx, <span class="kw-2">&amp;</span>len)| values.clone().sliced(idx <span class="kw">as _</span>, len).into())
             .collect_vec()
     }))
 }
 
 <span class="comment">// We use a macro instead of a blanket impl because this violates orphan rules.
 </span><span class="macro">macro_rules!</span> impl_buffer_native_type {
-    (<span class="macro-nonterminal">$primitive_type</span>:ty, <span class="macro-nonterminal">$native_type</span>:ty) =&gt; {
-        <span class="kw">impl </span>ChunkComponentSlicer <span class="kw">for </span><span class="kw-2">&amp;</span>[<span class="macro-nonterminal">$native_type</span>] {
-            <span class="kw">type </span>Item&lt;<span class="lifetime">'a</span>&gt; = Vec&lt;ArrowScalarBuffer&lt;<span class="macro-nonterminal">$native_type</span>&gt;&gt;;
+    (<span class="macro-nonterminal">$</span><span class="kw">type</span>:<span class="macro-nonterminal">ty</span>) =&gt; {
+        <span class="kw">impl </span>ChunkComponentSlicer <span class="kw">for </span><span class="kw-2">&amp;</span>[<span class="macro-nonterminal">$</span><span class="kw">type</span>] {
+            <span class="kw">type </span><span class="macro-nonterminal">Item</span>&lt;<span class="lifetime">'a</span>&gt; = Vec&lt;ArrowBuffer&lt;<span class="macro-nonterminal">$</span><span class="kw">type</span>&gt;&gt;;
 
-            <span class="kw">fn </span>slice&lt;<span class="lifetime">'a</span>&gt;(
+            <span class="kw">fn </span><span class="macro-nonterminal">slice</span>&lt;<span class="lifetime">'a</span>&gt;(
                 component_name: ComponentName,
-                array: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw">dyn </span>ArrowArray,
+                array: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw">dyn </span>Arrow2Array,
                 component_offsets: <span class="kw">impl </span>Iterator&lt;Item = (usize, usize)&gt; + <span class="lifetime">'a</span>,
             ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="self">Self</span>::Item&lt;<span class="lifetime">'a</span>&gt;&gt; + <span class="lifetime">'a </span>{
-                slice_as_buffer_native::&lt;<span class="macro-nonterminal">$primitive_type</span>, <span class="macro-nonterminal">$native_type</span>&gt;(
-                    component_name,
-                    array,
-                    component_offsets,
-                )
+                slice_as_buffer_native(component_name, array, component_offsets)
             }
         }
     };
 }
 
-<span class="macro">impl_buffer_native_type!</span>(arrow::array::types::UInt8Type, u8);
-<span class="macro">impl_buffer_native_type!</span>(arrow::array::types::UInt16Type, u16);
-<span class="macro">impl_buffer_native_type!</span>(arrow::array::types::UInt32Type, u32);
-<span class="macro">impl_buffer_native_type!</span>(arrow::array::types::UInt64Type, u64);
-<span class="comment">// impl_buffer_native_type!(arrow::array::types::UInt128Type, u128);
-</span><span class="macro">impl_buffer_native_type!</span>(arrow::array::types::Int8Type, i8);
-<span class="macro">impl_buffer_native_type!</span>(arrow::array::types::Int16Type, i16);
-<span class="macro">impl_buffer_native_type!</span>(arrow::array::types::Int32Type, i32);
-<span class="macro">impl_buffer_native_type!</span>(arrow::array::types::Int64Type, i64);
-<span class="comment">// impl_buffer_native_type!(arrow::array::types::Int128Type, i128);
-</span><span class="macro">impl_buffer_native_type!</span>(arrow::array::types::Float16Type, half::f16);
-<span class="macro">impl_buffer_native_type!</span>(arrow::array::types::Float32Type, f32);
-<span class="macro">impl_buffer_native_type!</span>(arrow::array::types::Float64Type, f64);
+<span class="macro">impl_buffer_native_type!</span>(u8);
+<span class="macro">impl_buffer_native_type!</span>(u16);
+<span class="macro">impl_buffer_native_type!</span>(u32);
+<span class="macro">impl_buffer_native_type!</span>(u64);
+<span class="macro">impl_buffer_native_type!</span>(i8);
+<span class="macro">impl_buffer_native_type!</span>(i16);
+<span class="macro">impl_buffer_native_type!</span>(i32);
+<span class="macro">impl_buffer_native_type!</span>(i64);
+<span class="macro">impl_buffer_native_type!</span>(f32);
+<span class="macro">impl_buffer_native_type!</span>(f64);
+<span class="macro">impl_buffer_native_type!</span>(i128);
 
 <span class="doccomment">/// The actual implementation of `impl_array_list_native_type!`, so that we don't have to work in a macro.
-</span><span class="kw">fn </span>slice_as_array_list_native&lt;<span class="lifetime">'a</span>, <span class="kw">const </span>N: usize, P, T&gt;(
+</span><span class="kw">fn </span>slice_as_array_list_native&lt;
+    <span class="lifetime">'a</span>,
+    <span class="kw">const </span>N: usize,
+    T: arrow2::types::NativeType + arrow::datatypes::ArrowNativeType,
+&gt;(
     component_name: ComponentName,
-    array: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw">dyn </span>ArrowArray,
+    array: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw">dyn </span>Arrow2Array,
     component_offsets: <span class="kw">impl </span>Iterator&lt;Item = (usize, usize)&gt; + <span class="lifetime">'a</span>,
 ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = Vec&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>[[T; N]]&gt;&gt; + <span class="lifetime">'a
 </span><span class="kw">where
     </span>[T; N]: bytemuck::Pod,
-    P: ArrowPrimitiveType&lt;Native = T&gt;,
-    T: ArrowNativeType + bytemuck::Pod,
 {
-    <span class="kw">let </span><span class="prelude-val">Some</span>(inner_list_array) = array.downcast_array_ref::&lt;ArrowListArray&gt;() <span class="kw">else </span>{
+    <span class="kw">let </span><span class="prelude-val">Some</span>(inner_list_array) = array.downcast_array2_ref::&lt;Arrow2ListArray&lt;i32&gt;&gt;() <span class="kw">else </span>{
         <span class="kw">if </span><span class="macro">cfg!</span>(debug_assertions) {
             <span class="macro">panic!</span>(<span class="string">"downcast failed for {component_name}, data discarded"</span>);
         } <span class="kw">else </span>{
@@ -1552,11 +1508,11 @@
     };
 
     <span class="kw">let </span>inner_offsets = inner_list_array.offsets();
-    <span class="kw">let </span>inner_lengths = offsets_lengths(inner_list_array.offsets()).collect_vec();
+    <span class="kw">let </span>inner_lengths = inner_list_array.offsets().lengths().collect_vec();
 
     <span class="kw">let </span><span class="prelude-val">Some</span>(fixed_size_list_array) = inner_list_array
         .values()
-        .downcast_array_ref::&lt;ArrowFixedSizeListArray&gt;()
+        .downcast_array2_ref::&lt;Arrow2FixedSizeListArray&gt;()
     <span class="kw">else </span>{
         <span class="kw">if </span><span class="macro">cfg!</span>(debug_assertions) {
             <span class="macro">panic!</span>(<span class="string">"downcast failed for {component_name}, data discarded"</span>);
@@ -1568,7 +1524,7 @@
 
     <span class="kw">let </span><span class="prelude-val">Some</span>(values) = fixed_size_list_array
         .values()
-        .downcast_array_ref::&lt;ArrowPrimitiveArray&lt;P&gt;&gt;()
+        .downcast_array2_ref::&lt;Arrow2PrimitiveArray&lt;T&gt;&gt;()
     <span class="kw">else </span>{
         <span class="kw">if </span><span class="macro">cfg!</span>(debug_assertions) {
             <span class="macro">panic!</span>(<span class="string">"downcast failed for {component_name}, data discarded"</span>);
@@ -1578,13 +1534,13 @@
         <span class="kw">return </span>Either::Left(std::iter::empty());
     };
 
-    <span class="kw">let </span>size = fixed_size_list_array.value_length() <span class="kw">as </span>usize;
+    <span class="kw">let </span>size = fixed_size_list_array.size();
     <span class="kw">let </span>values = values.values();
 
     <span class="comment">// NOTE: No need for validity checks here, `iter_offsets` already takes care of that.
     </span>Either::Right(component_offsets.map(<span class="kw">move </span>|(idx, len)| {
-        <span class="kw">let </span>inner_offsets = <span class="kw-2">&amp;</span>inner_offsets[idx..idx + len];
-        <span class="kw">let </span>inner_lengths = <span class="kw-2">&amp;</span>inner_lengths[idx..idx + len];
+        <span class="kw">let </span>inner_offsets = <span class="kw-2">&amp;</span>inner_offsets.as_slice()[idx..idx + len];
+        <span class="kw">let </span>inner_lengths = <span class="kw-2">&amp;</span>inner_lengths.as_slice()[idx..idx + len];
         <span class="macro">izip!</span>(inner_offsets, inner_lengths)
             .map(|(<span class="kw-2">&amp;</span>idx, <span class="kw-2">&amp;</span>len)| {
                 <span class="kw">let </span>idx = idx <span class="kw">as </span>usize;
@@ -1596,51 +1552,45 @@
 
 <span class="comment">// We use a macro instead of a blanket impl because this violates orphan rules.
 </span><span class="macro">macro_rules!</span> impl_array_list_native_type {
-    (<span class="macro-nonterminal">$primitive_type</span>:ty, <span class="macro-nonterminal">$native_type</span>:ty) =&gt; {
-        <span class="kw">impl</span>&lt;<span class="kw">const </span>N: usize&gt; ChunkComponentSlicer <span class="kw">for </span><span class="kw-2">&amp;</span>[[<span class="macro-nonterminal">$native_type</span>; N]]
+    (<span class="macro-nonterminal">$</span><span class="kw">type</span>:<span class="macro-nonterminal">ty</span>) =&gt; {
+        <span class="kw">impl</span>&lt;<span class="kw">const </span>N: usize&gt; ChunkComponentSlicer <span class="kw">for </span><span class="kw-2">&amp;</span>[[<span class="macro-nonterminal">$</span><span class="kw">type</span>; <span class="macro-nonterminal">N</span>]]
         <span class="kw">where
-            </span>[<span class="macro-nonterminal">$native_type</span>; N]: bytemuck::Pod,
+            </span>[<span class="macro-nonterminal">$</span><span class="kw">type</span>; <span class="macro-nonterminal">N</span>]: bytemuck::Pod,
         {
-            <span class="kw">type </span>Item&lt;<span class="lifetime">'a</span>&gt; = Vec&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>[[<span class="macro-nonterminal">$native_type</span>; N]]&gt;;
+            <span class="kw">type </span>Item&lt;<span class="lifetime">'a</span>&gt; = Vec&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>[[<span class="macro-nonterminal">$</span><span class="kw">type</span>; <span class="macro-nonterminal">N</span>]]&gt;;
 
             <span class="kw">fn </span>slice&lt;<span class="lifetime">'a</span>&gt;(
                 component_name: ComponentName,
-                array: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw">dyn </span>ArrowArray,
+                array: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw">dyn </span>Arrow2Array,
                 component_offsets: <span class="kw">impl </span>Iterator&lt;Item = (usize, usize)&gt; + <span class="lifetime">'a</span>,
             ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="self">Self</span>::Item&lt;<span class="lifetime">'a</span>&gt;&gt; + <span class="lifetime">'a </span>{
-                slice_as_array_list_native::&lt;N, <span class="macro-nonterminal">$primitive_type</span>, <span class="macro-nonterminal">$native_type</span>&gt;(
-                    component_name,
-                    array,
-                    component_offsets,
-                )
+                slice_as_array_list_native(component_name, array, component_offsets)
             }
         }
     };
 }
 
-<span class="macro">impl_array_list_native_type!</span>(arrow::array::types::UInt8Type, u8);
-<span class="macro">impl_array_list_native_type!</span>(arrow::array::types::UInt16Type, u16);
-<span class="macro">impl_array_list_native_type!</span>(arrow::array::types::UInt32Type, u32);
-<span class="macro">impl_array_list_native_type!</span>(arrow::array::types::UInt64Type, u64);
-<span class="comment">// impl_array_list_native_type!(arrow::array::types::UInt128Type, u128);
-</span><span class="macro">impl_array_list_native_type!</span>(arrow::array::types::Int8Type, i8);
-<span class="macro">impl_array_list_native_type!</span>(arrow::array::types::Int16Type, i16);
-<span class="macro">impl_array_list_native_type!</span>(arrow::array::types::Int32Type, i32);
-<span class="macro">impl_array_list_native_type!</span>(arrow::array::types::Int64Type, i64);
-<span class="comment">// impl_array_list_native_type!(arrow::array::types::Int128Type, i128);
-</span><span class="macro">impl_array_list_native_type!</span>(arrow::array::types::Float16Type, half::f16);
-<span class="macro">impl_array_list_native_type!</span>(arrow::array::types::Float32Type, f32);
-<span class="macro">impl_array_list_native_type!</span>(arrow::array::types::Float64Type, f64);
+<span class="macro">impl_array_list_native_type!</span>(u8);
+<span class="macro">impl_array_list_native_type!</span>(u16);
+<span class="macro">impl_array_list_native_type!</span>(u32);
+<span class="macro">impl_array_list_native_type!</span>(u64);
+<span class="macro">impl_array_list_native_type!</span>(i8);
+<span class="macro">impl_array_list_native_type!</span>(i16);
+<span class="macro">impl_array_list_native_type!</span>(i32);
+<span class="macro">impl_array_list_native_type!</span>(i64);
+<span class="macro">impl_array_list_native_type!</span>(f32);
+<span class="macro">impl_array_list_native_type!</span>(f64);
+<span class="macro">impl_array_list_native_type!</span>(i128);
 
 <span class="kw">impl </span>ChunkComponentSlicer <span class="kw">for </span>String {
     <span class="kw">type </span>Item&lt;<span class="lifetime">'a</span>&gt; = Vec&lt;ArrowString&gt;;
 
     <span class="kw">fn </span>slice&lt;<span class="lifetime">'a</span>&gt;(
         component_name: ComponentName,
-        array: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw">dyn </span>ArrowArray,
+        array: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw">dyn </span>Arrow2Array,
         component_offsets: <span class="kw">impl </span>Iterator&lt;Item = (usize, usize)&gt; + <span class="lifetime">'a</span>,
     ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = Vec&lt;ArrowString&gt;&gt; + <span class="lifetime">'a </span>{
-        <span class="kw">let </span><span class="prelude-val">Some</span>(utf8_array) = array.downcast_array_ref::&lt;ArrowStringArray&gt;() <span class="kw">else </span>{
+        <span class="kw">let </span><span class="prelude-val">Some</span>(utf8_array) = array.downcast_array2_ref::&lt;Arrow2Utf8Array&lt;i32&gt;&gt;() <span class="kw">else </span>{
             <span class="kw">if </span><span class="macro">cfg!</span>(debug_assertions) {
                 <span class="macro">panic!</span>(<span class="string">"downcast failed for {component_name}, data discarded"</span>);
             } <span class="kw">else </span>{
@@ -1649,30 +1599,30 @@
             <span class="kw">return </span>Either::Left(std::iter::empty());
         };
 
-        <span class="kw">let </span>values = utf8_array.values().clone();
-        <span class="kw">let </span>offsets = utf8_array.offsets().clone();
-        <span class="kw">let </span>lengths = offsets_lengths(utf8_array.offsets()).collect_vec();
+        <span class="kw">let </span>values = utf8_array.values();
+        <span class="kw">let </span>offsets = utf8_array.offsets();
+        <span class="kw">let </span>lengths = utf8_array.offsets().lengths().collect_vec();
 
         <span class="comment">// NOTE: No need for validity checks here, `component_offsets` already takes care of that.
         </span>Either::Right(component_offsets.map(<span class="kw">move </span>|(idx, len)| {
-            <span class="kw">let </span>offsets = <span class="kw-2">&amp;</span>offsets[idx..idx + len];
-            <span class="kw">let </span>lengths = <span class="kw-2">&amp;</span>lengths[idx..idx + len];
+            <span class="kw">let </span>offsets = <span class="kw-2">&amp;</span>offsets.as_slice()[idx..idx + len];
+            <span class="kw">let </span>lengths = <span class="kw-2">&amp;</span>lengths.as_slice()[idx..idx + len];
             <span class="macro">izip!</span>(offsets, lengths)
-                .map(|(<span class="kw-2">&amp;</span>idx, <span class="kw-2">&amp;</span>len)| ArrowString::from(values.slice_with_length(idx <span class="kw">as _</span>, len)))
+                .map(|(<span class="kw-2">&amp;</span>idx, <span class="kw-2">&amp;</span>len)| ArrowString::from(values.clone().sliced(idx <span class="kw">as _</span>, len)))
                 .collect_vec()
         }))
     }
 }
 
 <span class="kw">impl </span>ChunkComponentSlicer <span class="kw">for </span>bool {
-    <span class="kw">type </span>Item&lt;<span class="lifetime">'a</span>&gt; = ArrowBooleanBuffer;
+    <span class="kw">type </span>Item&lt;<span class="lifetime">'a</span>&gt; = Arrow2Bitmap;
 
     <span class="kw">fn </span>slice&lt;<span class="lifetime">'a</span>&gt;(
         component_name: ComponentName,
-        array: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw">dyn </span>ArrowArray,
+        array: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw">dyn </span>Arrow2Array,
         component_offsets: <span class="kw">impl </span>Iterator&lt;Item = (usize, usize)&gt; + <span class="lifetime">'a</span>,
     ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="self">Self</span>::Item&lt;<span class="lifetime">'a</span>&gt;&gt; + <span class="lifetime">'a </span>{
-        <span class="kw">let </span><span class="prelude-val">Some</span>(values) = array.downcast_array_ref::&lt;ArrowBooleanArray&gt;() <span class="kw">else </span>{
+        <span class="kw">let </span><span class="prelude-val">Some</span>(values) = array.downcast_array2_ref::&lt;Arrow2BooleanArray&gt;() <span class="kw">else </span>{
             <span class="kw">if </span><span class="macro">cfg!</span>(debug_assertions) {
                 <span class="macro">panic!</span>(<span class="string">"downcast failed for {component_name}, data discarded"</span>);
             } <span class="kw">else </span>{
@@ -1683,7 +1633,7 @@
         <span class="kw">let </span>values = values.values().clone();
 
         <span class="comment">// NOTE: No need for validity checks here, `component_offsets` already takes care of that.
-        </span>Either::Right(component_offsets.map(<span class="kw">move </span>|(idx, len)| values.clone().slice(idx, len)))
+        </span>Either::Right(component_offsets.map(<span class="kw">move </span>|(idx, len)| values.clone().sliced(idx, len)))
     }
 }
 

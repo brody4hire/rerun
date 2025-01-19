@@ -81,8 +81,9 @@
 <a href="#81" id="81">81</a>
 <a href="#82" id="82">82</a>
 <a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! The Rerun chunk store, implemented on top of [Apache Arrow](https://arrow.apache.org/)
-//! using the [`arrow`] crate.
+//! using the [`arrow2`] crate.
 //!
 //! This crate is an in-memory time series database for Rerun log data.
 //! It is indexed by Entity path, component, timeline, and time.
@@ -140,6 +141,7 @@
 
 <span class="kw">pub mod </span>external {
     <span class="kw">pub use </span>arrow;
+    <span class="kw">pub use </span>arrow2;
 
     <span class="kw">pub use </span>re_chunk;
 }

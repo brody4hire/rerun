@@ -324,14 +324,14 @@
 <a href="#324" id="324">324</a>
 <a href="#325" id="325">325</a>
 <a href="#326" id="326">326</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>itertools::Either;
-
-<span class="kw">use </span>re_chunk::{Chunk, RowId};
+</pre></div><pre class="rust"><code><span class="kw">use </span>re_chunk::{Chunk, RowId};
 <span class="kw">use </span>re_log_types::{EntityPath, TimeInt, TimePoint};
 <span class="kw">use </span>re_types::archetypes::{AssetVideo, VideoFrameReference};
 <span class="kw">use </span>re_types::components::VideoTimestamp;
 <span class="kw">use </span>re_types::Archetype;
-<span class="kw">use </span>re_types::{components::MediaType, ComponentBatch};
+<span class="kw">use </span>re_types::ComponentBatch;
+
+<span class="kw">use </span>arrow2::Either;
 
 <span class="kw">use crate</span>::{DataLoader, DataLoaderError, LoadedData};
 
@@ -488,7 +488,7 @@
             <span class="kw">let </span><span class="kw-2">mut </span>arch = re_types::archetypes::EncodedImage::from_file_contents(contents);
 
             <span class="kw">if let </span><span class="prelude-val">Ok</span>(format) = image::ImageFormat::from_path(filepath) {
-                arch.media_type = <span class="prelude-val">Some</span>(MediaType::from(format.to_mime_type()));
+                arch = arch.with_media_type(format.to_mime_type());
             }
 
             Chunk::builder(entity_path)

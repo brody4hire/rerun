@@ -1562,14 +1562,26 @@
 <a href="#1562" id="1562">1562</a>
 <a href="#1563" id="1563">1563</a>
 <a href="#1564" id="1564">1564</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>arrow::array::{
-    Array <span class="kw">as </span>ArrowArray, ArrayRef <span class="kw">as </span>ArrowArrayRef, BooleanArray <span class="kw">as </span>ArrowBooleanArray,
-    ListArray <span class="kw">as </span>ArrowListArray,
+<a href="#1565" id="1565">1565</a>
+<a href="#1566" id="1566">1566</a>
+<a href="#1567" id="1567">1567</a>
+<a href="#1568" id="1568">1568</a>
+<a href="#1569" id="1569">1569</a>
+<a href="#1570" id="1570">1570</a>
+<a href="#1571" id="1571">1571</a>
+<a href="#1572" id="1572">1572</a>
+<a href="#1573" id="1573">1573</a>
+<a href="#1574" id="1574">1574</a>
+<a href="#1575" id="1575">1575</a>
+<a href="#1576" id="1576">1576</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>arrow::array::ArrayRef <span class="kw">as </span>ArrowArrayRef;
+<span class="kw">use </span>arrow2::array::{
+    Array <span class="kw">as </span>Arrow2Array, BooleanArray <span class="kw">as </span>Arrow2BooleanArray, ListArray <span class="kw">as </span>Arrow2ListArray,
 };
-<span class="kw">use </span>itertools::Itertools <span class="kw">as _</span>;
+<span class="kw">use </span>itertools::Itertools;
 <span class="kw">use </span>nohash_hasher::IntSet;
 
-<span class="kw">use </span>re_arrow_util::arrow_util;
+<span class="kw">use </span>re_arrow_util::{arrow2_util, arrow_util, Arrow2ArrayDowncastRef <span class="kw">as _</span>};
 <span class="kw">use </span>re_log_types::Timeline;
 <span class="kw">use </span>re_types_core::{ComponentDescriptor, ComponentName};
 
@@ -1613,11 +1625,15 @@
             <span class="kw">let </span>found_it =
                 times.get(index) == <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>row_id_time_ns) &amp;&amp; incs.get(index) == <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>row_id_inc);
 
-            (found_it &amp;&amp; list_array.is_valid(index)).then(|| list_array.value(index))
+            (found_it &amp;&amp; list_array.is_valid(index)).then(|| list_array.value(index).into())
         } <span class="kw">else </span>{
             <span class="self">self</span>.row_ids()
                 .find_position(|id| <span class="kw-2">*</span>id == row_id)
-                .and_then(|(index, <span class="kw">_</span>)| list_array.is_valid(index).then(|| list_array.value(index)))
+                .and_then(|(index, <span class="kw">_</span>)| {
+                    list_array
+                        .is_valid(index)
+                        .then(|| list_array.value(index).into())
+                })
         }
     }
 
@@ -1674,7 +1690,10 @@
             components: components
                 .iter_flattened()
                 .map(|(component_desc, list_array)| {
-                    (component_desc.clone(), list_array.clone().slice(index, len))
+                    (
+                        component_desc.clone(),
+                        list_array.clone().sliced(index, len),
+                    )
                 })
                 .collect(),
         };
@@ -1915,7 +1934,7 @@
             <span class="kw">return </span><span class="self">self</span>.clone();
         };
 
-        <span class="kw">let </span><span class="prelude-val">Some</span>(validity) = component_list_array.nulls() <span class="kw">else </span>{
+        <span class="kw">let </span><span class="prelude-val">Some</span>(validity) = component_list_array.validity() <span class="kw">else </span>{
             <span class="kw">return </span><span class="self">self</span>.clone();
         };
 
@@ -1923,14 +1942,14 @@
 
         <span class="kw">let </span>mask = validity.iter().collect_vec();
         <span class="kw">let </span>is_sorted = <span class="kw-2">*</span>is_sorted || (mask.iter().filter(|&amp;&amp;b| b).count() &lt; <span class="number">2</span>);
-        <span class="kw">let </span>validity_filter = ArrowBooleanArray::from(mask);
+        <span class="kw">let </span>validity_filter = Arrow2BooleanArray::from_slice(mask);
 
         <span class="kw">let </span><span class="kw-2">mut </span>chunk = <span class="self">Self </span>{
             id: <span class="kw-2">*</span>id,
             entity_path: entity_path.clone(),
             heap_size_bytes: Default::default(),
             is_sorted,
-            row_ids: arrow_util::filter_array(row_ids, <span class="kw-2">&amp;</span>validity_filter),
+            row_ids: arrow_util::filter_array(row_ids, <span class="kw-2">&amp;</span>validity_filter.clone().into()),
             timelines: timelines
                 .iter()
                 .map(|(<span class="kw-2">&amp;</span>timeline, time_column)| (timeline, time_column.filtered(<span class="kw-2">&amp;</span>validity_filter)))
@@ -1938,14 +1957,20 @@
             components: components
                 .iter_flattened()
                 .map(|(component_desc, list_array)| {
-                    <span class="kw">let </span>filtered = arrow_util::filter_array(list_array, <span class="kw-2">&amp;</span>validity_filter);
+                    <span class="kw">let </span>filtered = arrow2_util::filter_array(list_array, <span class="kw-2">&amp;</span>validity_filter);
                     <span class="kw">let </span>filtered = <span class="kw">if </span>component_desc.component_name == component_name_pov {
                         <span class="comment">// Make sure we fully remove the validity bitmap for the densified
                         // component.
                         // This will allow further operations on this densified chunk to take some
                         // very optimized paths.
-                        </span><span class="kw">let </span>(field, offsets, values, _nulls) = filtered.into_parts();
-                        ArrowListArray::new(field, offsets, values, <span class="prelude-val">None</span>)
+
+                        </span><span class="attr">#[allow(clippy::unwrap_used)]
+                        </span>filtered
+                            .with_validity(<span class="prelude-val">None</span>)
+                            .downcast_array2_ref::&lt;Arrow2ListArray&lt;i32&gt;&gt;()
+                            <span class="comment">// Unwrap: cannot possibly fail -- going from a ListArray back to a ListArray.
+                            </span>.unwrap()
+                            .clone()
                     } <span class="kw">else </span>{
                         filtered
                     };
@@ -2012,11 +2037,10 @@
             components: components
                 .iter_flattened()
                 .map(|(component_desc, list_array)| {
-                    <span class="kw">let </span>field = <span class="kw">match </span>list_array.data_type() {
-                        arrow::datatypes::DataType::List(field) =&gt; field.clone(),
-                        <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(<span class="string">"This is always s list array"</span>),
-                    };
-                    (component_desc.clone(), ArrowListArray::new_null(field, <span class="number">0</span>))
+                    (
+                        component_desc.clone(),
+                        Arrow2ListArray::new_empty(list_array.data_type().clone()),
+                    )
                 })
                 .collect(),
         }
@@ -2093,7 +2117,7 @@
                     i.saturating_sub(<span class="number">1</span>) <span class="kw">as </span>i32
                 })
                 .collect_vec();
-            arrow::array::Int32Array::from(indices)
+            arrow2::array::Int32Array::from_vec(indices)
         };
 
         <span class="kw">let </span>chunk = <span class="self">Self </span>{
@@ -2114,7 +2138,7 @@
                 </span>.components
                 .iter_flattened()
                 .map(|(component_desc, list_array)| {
-                    <span class="kw">let </span>filtered = arrow_util::take_array(list_array, <span class="kw-2">&amp;</span>indices);
+                    <span class="kw">let </span>filtered = arrow2_util::take_array(list_array, <span class="kw-2">&amp;</span>indices);
                     (component_desc.clone(), filtered)
                 })
                 .collect(),
@@ -2138,12 +2162,12 @@
     ///
     /// Note: a `filter` kernel _copies_ the data in order to make the resulting arrays contiguous in memory.
     ///
-    /// [filter]: arrow::compute::kernels::filter
+    /// [filter]: arrow2::compute::filter::filter
     ///
     /// WARNING: the returned chunk has the same old [`crate::ChunkId`]! Change it with [`Self::with_id`].
     </span><span class="attr">#[must_use]
     #[inline]
-    </span><span class="kw">pub fn </span>filtered(<span class="kw-2">&amp;</span><span class="self">self</span>, filter: <span class="kw-2">&amp;</span>ArrowBooleanArray) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {
+    </span><span class="kw">pub fn </span>filtered(<span class="kw-2">&amp;</span><span class="self">self</span>, filter: <span class="kw-2">&amp;</span>Arrow2BooleanArray) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span><span class="self">Self </span>{
             id,
             entity_path,
@@ -2163,7 +2187,7 @@
             <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="self">self</span>.clone());
         }
 
-        <span class="kw">let </span>num_filtered = filter.values().iter().filter(|<span class="kw-2">&amp;</span>b| b).count();
+        <span class="kw">let </span>num_filtered = filter.values_iter().filter(|<span class="kw-2">&amp;</span>b| b).count();
         <span class="kw">if </span>num_filtered == <span class="number">0 </span>{
             <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="self">self</span>.emptied());
         }
@@ -2177,7 +2201,7 @@
             entity_path: entity_path.clone(),
             heap_size_bytes: Default::default(),
             is_sorted,
-            row_ids: arrow_util::filter_array(row_ids, filter),
+            row_ids: arrow_util::filter_array(row_ids, <span class="kw-2">&amp;</span>filter.clone().into()),
             timelines: timelines
                 .iter()
                 .map(|(<span class="kw-2">&amp;</span>timeline, time_column)| (timeline, time_column.filtered(filter)))
@@ -2185,7 +2209,7 @@
             components: components
                 .iter_flattened()
                 .map(|(component_desc, list_array)| {
-                    <span class="kw">let </span>filtered = arrow_util::filter_array(list_array, filter);
+                    <span class="kw">let </span>filtered = arrow2_util::filter_array(list_array, filter);
                     (component_desc.clone(), filtered)
                 })
                 .collect(),
@@ -2224,12 +2248,12 @@
     ///
     /// Takes care of up- and down-casting the data back and forth on behalf of the caller.
     ///
-    /// [take]: arrow::compute::kernels::take
+    /// [take]: arrow2::compute::take::take
     ///
     /// WARNING: the returned chunk has the same old [`crate::ChunkId`]! Change it with [`Self::with_id`].
     </span><span class="attr">#[must_use]
     #[inline]
-    </span><span class="kw">pub fn </span>taken(<span class="kw-2">&amp;</span><span class="self">self</span>, indices: <span class="kw-2">&amp;</span>arrow::array::Int32Array) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub fn </span>taken(<span class="kw-2">&amp;</span><span class="self">self</span>, indices: <span class="kw-2">&amp;</span>arrow2::array::Int32Array) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span><span class="self">Self </span>{
             id,
             entity_path,
@@ -2268,7 +2292,7 @@
             components: components
                 .iter_flattened()
                 .map(|(component_desc, list_array)| {
-                    <span class="kw">let </span>taken = arrow_util::take_array(list_array, indices);
+                    <span class="kw">let </span>taken = arrow2_util::take_array(list_array, indices);
                     (component_desc.clone(), taken)
                 })
                 .collect(),
@@ -2373,9 +2397,9 @@
 
     <span class="doccomment">/// Runs a [filter] compute kernel on the time data with the specified `mask`.
     ///
-    /// [filter]: arrow::compute::kernels::filter
+    /// [filter]: arrow2::compute::filter::filter
     </span><span class="attr">#[inline]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>filtered(<span class="kw-2">&amp;</span><span class="self">self</span>, filter: <span class="kw-2">&amp;</span>ArrowBooleanArray) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>filtered(<span class="kw-2">&amp;</span><span class="self">self</span>, filter: <span class="kw-2">&amp;</span>Arrow2BooleanArray) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span><span class="self">Self </span>{
             timeline,
             times,
@@ -2383,7 +2407,7 @@
             time_range: <span class="kw">_</span>,
         } = <span class="self">self</span>;
 
-        <span class="kw">let </span>is_sorted = <span class="kw-2">*</span>is_sorted || filter.values().iter().filter(|<span class="kw-2">&amp;</span>b| b).count() &lt; <span class="number">2</span>;
+        <span class="kw">let </span>is_sorted = <span class="kw-2">*</span>is_sorted || filter.values_iter().filter(|<span class="kw-2">&amp;</span>b| b).count() &lt; <span class="number">2</span>;
 
         <span class="comment">// We can know for sure whether the resulting chunk is already sorted (see conditional
         // above), but the reverse is not true.
@@ -2405,9 +2429,12 @@
         <span class="self">Self</span>::new(
             is_sorted_opt,
             <span class="kw-2">*</span>timeline,
-            arrow_util::filter_array(<span class="kw-2">&amp;</span>arrow::array::Int64Array::new(times.clone(), <span class="prelude-val">None</span>), filter)
-                .into_parts()
-                .<span class="number">1</span>,
+            arrow_util::filter_array(
+                <span class="kw-2">&amp;</span>arrow::array::Int64Array::new(times.clone(), <span class="prelude-val">None</span>),
+                <span class="kw-2">&amp;</span>filter.clone().into(),
+            )
+            .into_parts()
+            .<span class="number">1</span>,
         )
     }
 
@@ -2415,7 +2442,7 @@
     ///
     /// [take]: arrow::compute::take
     </span><span class="attr">#[inline]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>taken(<span class="kw-2">&amp;</span><span class="self">self</span>, indices: <span class="kw-2">&amp;</span>arrow::array::Int32Array) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>taken(<span class="kw-2">&amp;</span><span class="self">self</span>, indices: <span class="kw-2">&amp;</span>arrow2::array::Int32Array) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span><span class="self">Self </span>{
             timeline,
             times,
@@ -2438,6 +2465,7 @@
 
 </span><span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
+    <span class="kw">use </span>arrow2::array::PrimitiveArray <span class="kw">as </span>Arrow2PrimitiveArray;
     <span class="kw">use </span>itertools::Itertools;
     <span class="kw">use </span>re_log_types::{
         example_components::{MyColor, MyLabel, MyPoint},
@@ -2931,14 +2959,12 @@
 
         <span class="comment">// basic
         </span>{
-            <span class="kw">let </span>filter =
-                ArrowBooleanArray::from((<span class="number">0</span>..chunk.num_rows()).map(|i| i % <span class="number">2 </span>== <span class="number">0</span>).collect_vec());
+            <span class="kw">let </span>filter = Arrow2BooleanArray::from_slice(
+                (<span class="number">0</span>..chunk.num_rows()).map(|i| i % <span class="number">2 </span>== <span class="number">0</span>).collect_vec(),
+            );
             <span class="kw">let </span>got = chunk.filtered(<span class="kw-2">&amp;</span>filter).unwrap();
             <span class="macro">eprintln!</span>(<span class="string">"got:\n{got}"</span>);
-            <span class="macro">assert_eq!</span>(
-                filter.values().iter().filter(|<span class="kw-2">&amp;</span>b| b).count(),
-                got.num_rows()
-            );
+            <span class="macro">assert_eq!</span>(filter.values_iter().filter(|<span class="kw-2">&amp;</span>b| b).count(), got.num_rows());
 
             <span class="kw">let </span>expectations: <span class="kw-2">&amp;</span>[(<span class="kw">_</span>, <span class="kw">_</span>, <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="kw">dyn </span>re_types_core::ComponentBatch&gt;)] = <span class="kw-2">&amp;</span>[
                 (row_id1, MyPoint::descriptor(), <span class="prelude-val">Some</span>(points1 <span class="kw">as _</span>)),
@@ -2964,7 +2990,7 @@
 
         <span class="comment">// shorter
         </span>{
-            <span class="kw">let </span>filter = ArrowBooleanArray::from(
+            <span class="kw">let </span>filter = Arrow2BooleanArray::from_slice(
                 (<span class="number">0</span>..chunk.num_rows() / <span class="number">2</span>).map(|i| i % <span class="number">2 </span>== <span class="number">0</span>).collect_vec(),
             );
             <span class="kw">let </span>got = chunk.filtered(<span class="kw-2">&amp;</span>filter);
@@ -2973,7 +2999,7 @@
 
         <span class="comment">// longer
         </span>{
-            <span class="kw">let </span>filter = ArrowBooleanArray::from(
+            <span class="kw">let </span>filter = Arrow2BooleanArray::from_slice(
                 (<span class="number">0</span>..chunk.num_rows() * <span class="number">2</span>).map(|i| i % <span class="number">2 </span>== <span class="number">0</span>).collect_vec(),
             );
             <span class="kw">let </span>got = chunk.filtered(<span class="kw-2">&amp;</span>filter);
@@ -2985,8 +3011,6 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>taken() -&gt; anyhow::Result&lt;()&gt; {
-        <span class="kw">use </span>arrow::array::Int32Array <span class="kw">as </span>ArrowInt32Array;
-
         <span class="kw">let </span>entity_path = <span class="string">"my/entity"</span>;
 
         <span class="kw">let </span>row_id1 = RowId::new();
@@ -3080,7 +3104,7 @@
 
         <span class="comment">// basic
         </span>{
-            <span class="kw">let </span>indices = ArrowInt32Array::from(
+            <span class="kw">let </span>indices = Arrow2PrimitiveArray::&lt;i32&gt;::from_vec(
                 (<span class="number">0</span>..chunk.num_rows() <span class="kw">as </span>i32)
                     .filter(|i| i % <span class="number">2 </span>== <span class="number">0</span>)
                     .collect_vec(),
@@ -3113,7 +3137,7 @@
 
         <span class="comment">// repeated
         </span>{
-            <span class="kw">let </span>indices = ArrowInt32Array::from(
+            <span class="kw">let </span>indices = Arrow2PrimitiveArray::&lt;i32&gt;::from_vec(
                 std::iter::repeat(<span class="number">2i32</span>)
                     .take(chunk.num_rows() * <span class="number">2</span>)
                     .collect_vec(),

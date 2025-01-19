@@ -1587,7 +1587,7 @@
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>nohash_hasher::IntMap;
 
-    <span class="kw">use </span>re_arrow_util::arrow_util;
+    <span class="kw">use </span>re_arrow_util::arrow2_util;
     <span class="kw">use </span>re_log_types::{
         example_components::{MyColor, MyPoint},
         Timeline,
@@ -1608,27 +1608,27 @@
 
         <span class="kw">let </span>timelines2 = IntMap::default(); <span class="comment">// static
 
-        </span><span class="kw">let </span>points1 = MyPoint::to_arrow([
+        </span><span class="kw">let </span>points1 = MyPoint::to_arrow2([
             MyPoint::new(<span class="number">1.0</span>, <span class="number">2.0</span>),
             MyPoint::new(<span class="number">3.0</span>, <span class="number">4.0</span>),
             MyPoint::new(<span class="number">5.0</span>, <span class="number">6.0</span>),
         ])<span class="question-mark">?</span>;
         <span class="kw">let </span>points2 = <span class="prelude-val">None</span>;
-        <span class="kw">let </span>points3 = MyPoint::to_arrow([MyPoint::new(<span class="number">10.0</span>, <span class="number">20.0</span>)])<span class="question-mark">?</span>;
-        <span class="kw">let </span>points4 = MyPoint::to_arrow([MyPoint::new(<span class="number">100.0</span>, <span class="number">200.0</span>), MyPoint::new(<span class="number">300.0</span>, <span class="number">400.0</span>)])<span class="question-mark">?</span>;
+        <span class="kw">let </span>points3 = MyPoint::to_arrow2([MyPoint::new(<span class="number">10.0</span>, <span class="number">20.0</span>)])<span class="question-mark">?</span>;
+        <span class="kw">let </span>points4 = MyPoint::to_arrow2([MyPoint::new(<span class="number">100.0</span>, <span class="number">200.0</span>), MyPoint::new(<span class="number">300.0</span>, <span class="number">400.0</span>)])<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>colors1 = MyColor::to_arrow([
+        <span class="kw">let </span>colors1 = MyColor::to_arrow2([
             MyColor::from_rgb(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>),
             MyColor::from_rgb(<span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>),
             MyColor::from_rgb(<span class="number">7</span>, <span class="number">8</span>, <span class="number">9</span>),
         ])<span class="question-mark">?</span>;
-        <span class="kw">let </span>colors2 = MyColor::to_arrow([MyColor::from_rgb(<span class="number">10</span>, <span class="number">20</span>, <span class="number">30</span>)])<span class="question-mark">?</span>;
+        <span class="kw">let </span>colors2 = MyColor::to_arrow2([MyColor::from_rgb(<span class="number">10</span>, <span class="number">20</span>, <span class="number">30</span>)])<span class="question-mark">?</span>;
         <span class="kw">let </span>colors3 = <span class="prelude-val">None</span>;
         <span class="kw">let </span>colors4 = <span class="prelude-val">None</span>;
 
         <span class="kw">let </span>components = [
             (MyPoint::descriptor(), {
-                <span class="kw">let </span>list_array = arrow_util::arrays_to_list_array_opt(<span class="kw-2">&amp;</span>[
+                <span class="kw">let </span>list_array = arrow2_util::arrays_to_list_array_opt(<span class="kw-2">&amp;</span>[
                     <span class="prelude-val">Some</span>(<span class="kw-2">&amp;*</span>points1),
                     points2,
                     <span class="prelude-val">Some</span>(<span class="kw-2">&amp;*</span>points3),
@@ -1639,7 +1639,7 @@
                 list_array
             }),
             (MyPoint::descriptor(), {
-                <span class="kw">let </span>list_array = arrow_util::arrays_to_list_array_opt(<span class="kw-2">&amp;</span>[
+                <span class="kw">let </span>list_array = arrow2_util::arrays_to_list_array_opt(<span class="kw-2">&amp;</span>[
                     <span class="prelude-val">Some</span>(<span class="kw-2">&amp;*</span>colors1),
                     <span class="prelude-val">Some</span>(<span class="kw-2">&amp;*</span>colors2),
                     colors3,
@@ -1719,7 +1719,7 @@
 
                 <span class="macro">assert_eq!</span>(chunk_before, chunk_after);
 
-                <span class="macro">assert!</span>(chunk_before.are_equal(<span class="kw-2">&amp;</span>chunk_after));
+                <span class="macro">assert!</span>(chunk_before.are_equal_ignoring_extension_types(<span class="kw-2">&amp;</span>chunk_after));
 
                 chunk_before = chunk_after;
             }
